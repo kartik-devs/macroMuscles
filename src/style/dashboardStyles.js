@@ -24,6 +24,16 @@ export const dashboardStyles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#1a1a1a',
   },
+  settingsButton: {
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',

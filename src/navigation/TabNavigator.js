@@ -12,20 +12,26 @@ import SocialFeed from '../screen/social/SocialFeed';
 import Friends from '../screen/social/Friends';
 import ShareWorkout from '../screen/social/ShareWorkout';
 import Comments from '../screen/social/Comments';
+import WorkoutMain from '../screen/WorkoutMain';
+import WorkoutPreferences from '../screen/WorkoutPreferences';
+import MonthlyWorkoutPlan from '../screen/MonthlyWorkoutPlan';
+import DailyWorkout from '../screen/DailyWorkout';
+import Settings from '../screen/Settings';
 
 
-// Placeholder screens
-const History = () => (
-  <View style={styles.container}>
-    <Text style={styles.text}>History Screen</Text>
-  </View>
-);
+// Create stack navigator for workout screens
+const WorkoutStack = createNativeStackNavigator();
 
-const Workout = () => (
-  <View style={styles.container}>
-    <Text style={styles.text}>Workout Screen</Text>
-  </View>
-);
+function WorkoutStackScreen() {
+  return (
+    <WorkoutStack.Navigator screenOptions={{ headerShown: false }}>
+      <WorkoutStack.Screen name="WorkoutMain" component={WorkoutMain} />
+      <WorkoutStack.Screen name="WorkoutPreferences" component={WorkoutPreferences} />
+      <WorkoutStack.Screen name="MonthlyWorkoutPlan" component={MonthlyWorkoutPlan} />
+      <WorkoutStack.Screen name="DailyWorkout" component={DailyWorkout} />
+    </WorkoutStack.Navigator>
+  );
+}
 
 // Create stack navigator for social screens
 const SocialStack = createNativeStackNavigator();
@@ -38,6 +44,7 @@ function SocialStackScreen() {
       <SocialStack.Screen name="ShareWorkout" component={ShareWorkout} />
       <SocialStack.Screen name="Comments" component={Comments} />
       <SocialStack.Screen name="UserProfile" component={ProfilePage} />
+      <SocialStack.Screen name="Settings" component={Settings} />
     </SocialStack.Navigator>
   );
 }
@@ -91,7 +98,7 @@ export default function TabNavigator() {
       />
       <Tab.Screen 
         name="Workout" 
-        component={Workout} 
+        component={WorkoutStackScreen} 
         options={{
           tabBarButton: (props) => (
             <TouchableOpacity 

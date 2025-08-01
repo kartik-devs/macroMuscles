@@ -59,7 +59,7 @@ function UserPreferencesScreen({ navigation }) {
     { id: 'push_pull_legs', name: 'Push/Pull/Legs', icon: 'body', color: '#E53935' },
     { id: 'upper_lower', name: 'Upper/Lower', icon: 'fitness', color: '#44bd32' },
     { id: 'full_body', name: 'Full Body', icon: 'body-outline', color: '#0097e6' },
-    { id: 'bro_split', name: 'Bro Split', icon: 'muscle', color: '#8e44ad' },
+    { id: 'bro_split', name: 'Bro Split', icon: 'barbell', color: '#8e44ad' },
   ];
 
   const handleContinue = async () => {

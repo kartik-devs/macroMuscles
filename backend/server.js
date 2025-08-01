@@ -133,6 +133,9 @@ function createTables() {
       height FLOAT,
       weight FLOAT,
       age INT,
+      workout_split VARCHAR(50),
+      include_cardio BOOLEAN DEFAULT FALSE,
+      cardio_type VARCHAR(20),
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       FOREIGN KEY (user_id) REFERENCES users(id),
       UNIQUE KEY unique_user_profile (user_id)
@@ -679,14 +682,19 @@ app.get('/api/update-schema', (req, res) => {
 
 // Update user profile
 app.post('/api/profile', (req, res) => {
-  const { user_id, display_name, avatar_initial, height, weight, age } = req.body;
+  const { user_id, display_name, avatar_initial, height, weight, age, workout_split, include_cardio, cardio_type } = req.body;
   if (!user_id) return res.status(400).json({ message: 'User ID required' });
 
   db.query(
-    `INSERT INTO user_profiles (user_id, display_name, avatar_initial, height, weight, age)
-     VALUES (?, ?, ?, ?, ?, ?)
-     ON DUPLICATE KEY UPDATE display_name=?, avatar_initial=?, height=?, weight=?, age=?`,
-    [user_id, display_name, avatar_initial, height, weight, age, display_name, avatar_initial, height, weight, age],
+    `INSERT INTO user_profiles (user_id, display_name, avatar_initial, height, weight, age, workout_split, include_cardio, cardio_type)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+     ON DUPLICATE KEY UPDATE 
+       display_name=?, avatar_initial=?, height=?, weight=?, age=?, 
+       workout_split=?, include_cardio=?, cardio_type=?`,
+    [
+      user_id, display_name, avatar_initial, height, weight, age, workout_split, include_cardio, cardio_type,
+      display_name, avatar_initial, height, weight, age, workout_split, include_cardio, cardio_type
+    ],
     (err) => {
       if (err) return res.status(500).json({ message: 'Error updating profile' });
       res.json({ message: 'Profile updated successfully' });
