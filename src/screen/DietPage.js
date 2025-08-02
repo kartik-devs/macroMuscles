@@ -14,7 +14,12 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { getCurrentUserId } from '../api/auth';
 import { saveUserProfile, getUserProfile } from '../api/profile';
 import { getRecommendedExercises } from './diets/data/exerciseData';
-
+import AtkinsDiet from './src/screen/diets/AtkinsDiet';
+import IntermittentFastingDiet from './src/screen/diets/IntermittentFastingDiet';
+import HighProteinDiet from './src/screen/diets/HighProteinDiet';
+import MediterraneanDiet from './src/screen/diets/MediterraneanDiet';
+import VeganDiet from './src/screen/diets/VeganDiet';
+import VegetarianDiet from './src/screen/diets/VegetarianDiet';
 const Tab = createBottomTabNavigator();
 
 // User Preferences Screen
@@ -198,110 +203,147 @@ function UserPreferencesScreen({ navigation }) {
 
 // Recommended Diet Plan Screen
 function RecommendedDietPlanScreen({ route }) {
-  const { dietPreference, workoutSplit } = route.params;
+  const { dietPreference, workoutSplit } = route.params || {};
   const [activeTab, setActiveTab] = useState('breakfast');
   const [cheatDayUnlocked, setCheatDayUnlocked] = useState(false);
+
+  // Add default values to prevent undefined errors
+  const defaultDietPreference = dietPreference || 'maintenance';
+  const defaultWorkoutSplit = workoutSplit || 'push_pull_legs';
 
   // Diet recommendations based on preferences
   const getDietRecommendations = () => {
     const recommendations = {
       weight_loss: {
         breakfast: [
-          { name: 'Oatmeal with berries', calories: 250, protein: 8, carbs: 45, fat: 5 },
-          { name: 'Greek yogurt with nuts', calories: 200, protein: 15, carbs: 20, fat: 8 },
-          { name: 'Egg white omelette', calories: 180, protein: 20, carbs: 5, fat: 8 },
+          { name: 'Oatmeal with berries', calories: 250, protein: 8, carbs: 45, fat: 5, image: require('../assets/oatmeal.jpg') },
+          { name: 'Greek yogurt with nuts', calories: 200, protein: 15, carbs: 20, fat: 8, image: require('../assets/yogurt.jpg') },
+          { name: 'Egg white omelette', calories: 180, protein: 20, carbs: 5, fat: 8, image: require('../assets/omelette.jpg') },
         ],
-        lunch: [
-          { name: 'Grilled chicken salad', calories: 300, protein: 35, carbs: 15, fat: 12 },
-          { name: 'Tuna with vegetables', calories: 280, protein: 30, carbs: 20, fat: 10 },
-          { name: 'Quinoa bowl', calories: 320, protein: 12, carbs: 55, fat: 8 },
-        ],
-        dinner: [
-          { name: 'Salmon with asparagus', calories: 350, protein: 40, carbs: 10, fat: 18 },
-          { name: 'Turkey with sweet potato', calories: 380, protein: 35, carbs: 45, fat: 12 },
-          { name: 'Lean beef stir-fry', calories: 320, protein: 38, carbs: 25, fat: 10 },
-        ],
-        snacks: [
-          { name: 'Apple with almond butter', calories: 150, protein: 4, carbs: 20, fat: 8 },
-          { name: 'Cottage cheese', calories: 120, protein: 14, carbs: 8, fat: 5 },
-          { name: 'Carrot sticks with hummus', calories: 100, protein: 3, carbs: 15, fat: 4 },
-        ],
-        cheat_day: [
-          { name: 'Pizza slice', calories: 285, protein: 12, carbs: 35, fat: 12 },
-          { name: 'Ice cream cone', calories: 200, protein: 4, carbs: 30, fat: 8 },
-          { name: 'Chocolate chip cookie', calories: 150, protein: 2, carbs: 20, fat: 7 },
-        ],
+                  lunch: [
+            { name: 'Grilled chicken salad', calories: 300, protein: 35, carbs: 15, fat: 12, image: require('../assets/chicken_salad.jpg') },
+            { name: 'Tuna with vegetables', calories: 280, protein: 30, carbs: 20, fat: 10, image: require('../assets/tuna.jpg') },
+            { name: 'Quinoa bowl', calories: 320, protein: 12, carbs: 55, fat: 8, image: require('../assets/quinoa.jpg') },
+          ],
+                  dinner: [
+            { name: 'Salmon with asparagus', calories: 350, protein: 40, carbs: 10, fat: 18, image: require('../assets/salmon.jpg') },
+            { name: 'Turkey with sweet potato', calories: 380, protein: 35, carbs: 45, fat: 12, image: require('../assets/turkey.jpg') },
+            { name: 'Lean beef stir-fry', calories: 320, protein: 38, carbs: 25, fat: 10, image: require('../assets/beef_stirfry.jpg') },
+          ],
+                  snacks: [
+            { name: 'Apple with almond butter', calories: 150, protein: 4, carbs: 20, fat: 8, image: require('../assets/apple_almond.jpg') },
+            { name: 'Cottage cheese', calories: 120, protein: 14, carbs: 8, fat: 5, image: require('../assets/cottage_cheese.jpg') },
+            { name: 'Carrot sticks with hummus', calories: 100, protein: 3, carbs: 15, fat: 4, image: require('../assets/carrots_hummus.jpg') },
+          ],
+                  cheat_day: [
+            { name: 'Pizza slice', calories: 285, protein: 12, carbs: 35, fat: 12, image: require('../assets/pizza.jpg') },
+            { name: 'Ice cream cone', calories: 200, protein: 4, carbs: 30, fat: 8, image: require('../assets/ice_cream.jpg') },
+            { name: 'Chocolate chip cookie', calories: 150, protein: 2, carbs: 20, fat: 7, image: require('../assets/cookie.jpg') },
+          ],
       },
       muscle_gain: {
         breakfast: [
-          { name: 'Protein pancakes', calories: 450, protein: 25, carbs: 60, fat: 15 },
-          { name: 'Eggs with toast', calories: 380, protein: 22, carbs: 45, fat: 18 },
-          { name: 'Protein smoothie bowl', calories: 420, protein: 28, carbs: 55, fat: 12 },
+          { name: 'Protein pancakes', calories: 450, protein: 25, carbs: 60, fat: 15, image: require('../assets/protein_pancakes.jpg') },
+          { name: 'Eggs with toast', calories: 380, protein: 22, carbs: 45, fat: 18, image: require('../assets/eggs_toast.jpg') },
+          { name: 'Protein smoothie bowl', calories: 420, protein: 28, carbs: 55, fat: 12, image: require('../assets/smoothie_bowl.jpg') },
         ],
-        lunch: [
-          { name: 'Chicken rice bowl', calories: 550, protein: 45, carbs: 70, fat: 15 },
-          { name: 'Turkey sandwich', calories: 480, protein: 35, carbs: 55, fat: 18 },
-          { name: 'Beef stir-fry', calories: 520, protein: 42, carbs: 65, fat: 16 },
-        ],
-        dinner: [
-          { name: 'Steak with potatoes', calories: 600, protein: 50, carbs: 55, fat: 25 },
-          { name: 'Salmon with rice', calories: 580, protein: 45, carbs: 60, fat: 22 },
-          { name: 'Pork chops with pasta', calories: 620, protein: 48, carbs: 70, fat: 20 },
-        ],
-        snacks: [
-          { name: 'Protein shake', calories: 200, protein: 25, carbs: 15, fat: 5 },
-          { name: 'Greek yogurt with granola', calories: 250, protein: 18, carbs: 30, fat: 8 },
-          { name: 'Peanut butter sandwich', calories: 280, protein: 12, carbs: 35, fat: 12 },
-        ],
-        cheat_day: [
-          { name: 'Burger with fries', calories: 800, protein: 35, carbs: 85, fat: 35 },
-          { name: 'Milkshake', calories: 400, protein: 8, carbs: 60, fat: 15 },
-          { name: 'Chocolate cake', calories: 350, protein: 6, carbs: 45, fat: 18 },
-        ],
+                  lunch: [
+            { name: 'Chicken rice bowl', calories: 550, protein: 45, carbs: 70, fat: 15, image: require('../assets/chicken_rice.jpg') },
+            { name: 'Turkey sandwich', calories: 480, protein: 35, carbs: 55, fat: 18, image: require('../assets/turkey_sandwich.jpg') },
+            { name: 'Beef stir-fry', calories: 520, protein: 42, carbs: 65, fat: 16, image: require('../assets/beef_stirfry.jpg') },
+          ],
+          dinner: [
+            { name: 'Steak with potatoes', calories: 600, protein: 50, carbs: 55, fat: 25, image: require('../assets/steak_potatoes.jpg') },
+            { name: 'Salmon with rice', calories: 580, protein: 45, carbs: 60, fat: 22, image: require('../assets/salmon_rice.jpg') },
+            { name: 'Pork chops with pasta', calories: 620, protein: 48, carbs: 70, fat: 20, image: require('../assets/pork_pasta.jpg') },
+          ],
+          snacks: [
+            { name: 'Protein shake', calories: 200, protein: 25, carbs: 15, fat: 5, image: require('../assets/protein_shake.jpg') },
+            { name: 'Greek yogurt with granola', calories: 250, protein: 18, carbs: 30, fat: 8, image: require('../assets/yogurt_granola.jpg') },
+            { name: 'Peanut butter sandwich', calories: 280, protein: 12, carbs: 35, fat: 12, image: require('../assets/pb_sandwich.jpg') },
+          ],
+          cheat_day: [
+            { name: 'Burger with fries', calories: 800, protein: 35, carbs: 85, fat: 35, image: require('../assets/burger_fries.jpg') },
+            { name: 'Milkshake', calories: 400, protein: 8, carbs: 60, fat: 15, image: require('../assets/milkshake.jpg') },
+            { name: 'Chocolate cake', calories: 350, protein: 6, carbs: 45, fat: 18, image: require('../assets/chocolate_cake.jpg') },
+          ],
       },
       maintenance: {
         breakfast: [
-          { name: 'Avocado toast', calories: 320, protein: 12, carbs: 40, fat: 16 },
-          { name: 'Smoothie bowl', calories: 280, protein: 15, carbs: 45, fat: 8 },
-          { name: 'Breakfast burrito', calories: 350, protein: 18, carbs: 35, fat: 18 },
+          { name: 'Avocado toast', calories: 320, protein: 12, carbs: 40, fat: 16, image: require('../assets/avocado_toast.jpg') },
+          { name: 'Smoothie bowl', calories: 280, protein: 15, carbs: 45, fat: 8, image: require('../assets/smoothie_bowl.jpg') },
+          { name: 'Breakfast burrito', calories: 350, protein: 18, carbs: 35, fat: 18, image: require('../assets/breakfast_burrito.jpg') },
         ],
         lunch: [
-          { name: 'Mediterranean salad', calories: 380, protein: 20, carbs: 45, fat: 18 },
-          { name: 'Soup and sandwich', calories: 420, protein: 25, carbs: 50, fat: 16 },
-          { name: 'Pasta primavera', calories: 450, protein: 15, carbs: 65, fat: 14 },
+          { name: 'Mediterranean salad', calories: 380, protein: 20, carbs: 45, fat: 18, image: require('../assets/mediterranean_salad.jpg') },
+          { name: 'Soup and sandwich', calories: 420, protein: 25, carbs: 50, fat: 16, image: require('../assets/soup_sandwich.jpg') },
+          { name: 'Pasta primavera', calories: 450, protein: 15, carbs: 65, fat: 14, image: require('../assets/pasta_primavera.jpg') },
         ],
         dinner: [
-          { name: 'Grilled fish with quinoa', calories: 480, protein: 35, carbs: 55, fat: 18 },
-          { name: 'Chicken with vegetables', calories: 420, protein: 38, carbs: 40, fat: 16 },
-          { name: 'Vegetarian curry', calories: 450, protein: 18, carbs: 60, fat: 16 },
+          { name: 'Grilled fish with quinoa', calories: 480, protein: 35, carbs: 55, fat: 18, image: require('../assets/fish_quinoa.jpg') },
+          { name: 'Chicken with vegetables', calories: 420, protein: 38, carbs: 40, fat: 16, image: require('../assets/chicken_vegetables.jpg') },
+          { name: 'Vegetarian curry', calories: 450, protein: 18, carbs: 60, fat: 16, image: require('../assets/vegetarian_curry.jpg') },
         ],
         snacks: [
-          { name: 'Mixed nuts', calories: 180, protein: 6, carbs: 8, fat: 16 },
-          { name: 'Fruit and yogurt', calories: 150, protein: 8, carbs: 25, fat: 4 },
-          { name: 'Dark chocolate', calories: 120, protein: 2, carbs: 15, fat: 8 },
+          { name: 'Mixed nuts', calories: 180, protein: 6, carbs: 8, fat: 16, image: require('../assets/mixed_nuts.jpg') },
+          { name: 'Fruit and yogurt', calories: 150, protein: 8, carbs: 25, fat: 4, image: require('../assets/fruit_yogurt.jpg') },
+          { name: 'Dark chocolate', calories: 120, protein: 2, carbs: 15, fat: 8, image: require('../assets/dark_chocolate.jpg') },
         ],
         cheat_day: [
-          { name: 'Sushi roll', calories: 250, protein: 8, carbs: 45, fat: 6 },
-          { name: 'Gelato', calories: 180, protein: 4, carbs: 25, fat: 8 },
-          { name: 'Wine and cheese', calories: 200, protein: 6, carbs: 8, fat: 12 },
+          { name: 'Sushi roll', calories: 250, protein: 8, carbs: 45, fat: 6, image: require('../assets/sushi.jpg') },
+          { name: 'Gelato', calories: 180, protein: 4, carbs: 25, fat: 8, image: require('../assets/gelato.jpg') },
+          { name: 'Wine and cheese', calories: 200, protein: 6, carbs: 8, fat: 12, image: require('../assets/wine_cheese.jpg') },
         ],
       },
     };
 
-    return recommendations[dietPreference] || recommendations.maintenance;
+    return recommendations[defaultDietPreference] || recommendations.maintenance;
   };
 
   const dietData = getDietRecommendations();
-  const workoutData = getRecommendedExercises(workoutSplit, dietPreference);
+  const workoutData = getRecommendedExercises(defaultWorkoutSplit, defaultDietPreference);
 
-  const renderMealCard = (meal) => (
+  // Handle thumbs up - increase frequency of this meal
+  const handleThumbsUp = (meal, index) => {
+    // In a real app, this would save to backend
+    Alert.alert('Liked!', `${meal.name} will appear more often in your recommendations.`);
+  };
+
+  // Handle thumbs down - replace with alternative meal
+  const handleThumbsDown = (meal, index) => {
+    // In a real app, this would fetch alternative meal from backend
+    Alert.alert('Replaced!', `${meal.name} has been replaced with an alternative option.`);
+  };
+
+  const renderMealCard = (meal, index) => (
     <View style={styles.mealCard}>
-      <Text style={styles.mealName}>{meal.name}</Text>
-      <View style={styles.mealNutrition}>
-        <Text style={styles.nutritionText}>{meal.calories} cal</Text>
-        <Text style={styles.nutritionText}>{meal.protein}g protein</Text>
-        <Text style={styles.nutritionText}>{meal.carbs}g carbs</Text>
-        <Text style={styles.nutritionText}>{meal.fat}g fat</Text>
+      <Image 
+        source={meal.image} 
+        style={styles.mealImage}
+        resizeMode="cover"
+      />
+      <View style={styles.mealContent}>
+        <Text style={styles.mealName}>{meal.name}</Text>
+        <View style={styles.mealNutrition}>
+          <Text style={styles.nutritionText}>{meal.calories} cal</Text>
+          <Text style={styles.nutritionText}>{meal.protein}g protein</Text>
+          <Text style={styles.nutritionText}>{meal.carbs}g carbs</Text>
+          <Text style={styles.nutritionText}>{meal.fat}g fat</Text>
+        </View>
+        <View style={styles.mealActions}>
+          <TouchableOpacity 
+            style={styles.actionButton}
+            onPress={() => handleThumbsUp(meal, index)}
+          >
+            <Ionicons name="thumbs-up-outline" size={20} color="#44bd32" />
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.actionButton}
+            onPress={() => handleThumbsDown(meal, index)}
+          >
+            <Ionicons name="thumbs-down-outline" size={20} color="#E53935" />
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   );
@@ -346,7 +388,7 @@ function RecommendedDietPlanScreen({ route }) {
       <View style={styles.planHeader}>
         <Text style={styles.planTitle}>Your Recommended Diet Plan</Text>
         <Text style={styles.planSubtitle}>
-          Based on your {dietPreference.replace('_', ' ')} preference and {workoutSplit.replace('_', ' ')} split
+          Based on your {defaultDietPreference.replace('_', ' ')} preference and {defaultWorkoutSplit.replace('_', ' ')} split
         </Text>
       </View>
 
@@ -399,7 +441,7 @@ function RecommendedDietPlanScreen({ route }) {
             {workoutData.map((day, dayIndex) => (
               <View key={dayIndex} style={styles.workoutDayContainer}>
                 <Text style={styles.workoutDayTitle}>{day.day}</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                <ScrollView showsVerticalScrollIndicator={false}>
                   {day.exercises.map((exercise, exerciseIndex) => (
                     <View key={exerciseIndex} style={styles.exerciseCardContainer}>
                       {renderExerciseCard(exercise)}
@@ -411,7 +453,7 @@ function RecommendedDietPlanScreen({ route }) {
           </View>
         ) : (
           <View style={styles.mealsContainer}>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <ScrollView showsVerticalScrollIndicator={false}>
               {dietData[activeTab]?.map((meal, index) => (
                 <View key={index} style={styles.mealCardContainer}>
                   {renderMealCard(meal)}
@@ -514,8 +556,31 @@ function PopularDietPlansScreen({ navigation }) {
                     key={dIdx}
                     style={[styles.dietCard, { borderColor: diet.color }]}
                     onPress={() => {
-                      if (diet.name === 'Keto Diet') navigation.navigate('KetoDiet');
-                      // Add more navigation for other diets as you create their pages
+                      switch (diet.name) {
+                        case 'Keto Diet':
+                          navigation.navigate('KetoDiet');
+                          break;
+                        case 'Atkins Diet':
+                          navigation.navigate('AtkinsDiet');
+                          break;
+                        case 'Intermittent Fasting':
+                          navigation.navigate('IntermittentFastingDiet');
+                          break;
+                        case 'High Protein Diet':
+                          navigation.navigate('HighProteinDiet');
+                          break;
+                        case 'Mediterranean Diet':
+                          navigation.navigate('MediterraneanDiet');
+                          break;
+                        case 'Vegan Diet':
+                          navigation.navigate('VeganDiet');
+                          break;
+                        case 'Vegetarian Diet':
+                          navigation.navigate('VegetarianDiet');
+                          break;
+                        default:
+                          console.log('Diet not implemented yet:', diet.name);
+                      }
                     }}
                     activeOpacity={0.85}
                   >
@@ -777,18 +842,25 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   mealCardContainer: {
-    marginRight: 16,
-    width: 280,
+    width: '100%',
+    marginBottom: 16,
   },
   mealCard: {
     backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
+    overflow: 'hidden',
+  },
+  mealImage: {
+    width: '100%',
+    height: 200,
+  },
+  mealContent: {
+    padding: 16,
   },
   mealName: {
     fontSize: 16,
@@ -800,6 +872,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  mealActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+  },
+  actionButton: {
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: '#f8f9fa',
+    minWidth: 60,
+    alignItems: 'center',
   },
   nutritionText: {
     fontSize: 12,
@@ -826,8 +913,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   exerciseCardContainer: {
-    marginRight: 16,
-    width: 280,
+    width: '100%',
+    marginBottom: 16,
   },
   exerciseCard: {
     backgroundColor: '#fff',

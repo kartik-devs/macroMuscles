@@ -17,6 +17,12 @@ import ForgotPassword from './src/screen/login/ForgotPassword';
 import KetoDiet from './src/screen/diets/KetoDiet';
 import SprintChallenge from './src/screen/challenges/SprintChallange';
 import ShouldersWorkout from './src/screen/workouts/shouldersWorkout';
+import AtkinsDiet from './src/screen/diets/AtkinsDiet';
+import IntermittentFastingDiet from './src/screen/diets/IntermittentFastingDiet';
+import HighProteinDiet from './src/screen/diets/HighProteinDiet';
+import MediterraneanDiet from './src/screen/diets/MediterraneanDiet';
+import VeganDiet from './src/screen/diets/VeganDiet';
+import VegetarianDiet from './src/screen/diets/VegetarianDiet';
 
 const Stack = createNativeStackNavigator();
 
@@ -52,6 +58,12 @@ export default function App() {
         <Stack.Screen name="SprintChallenge" component={SprintChallenge} />
         <Stack.Screen name="KetoDiet" component={KetoDiet} />
         <Stack.Screen name="ShouldersWorkout" component={ShouldersWorkout}/>
+        <Stack.Screen name="AtkinsDiet" component={AtkinsDiet} />
+        <Stack.Screen name="IntermittentFastingDiet" component={IntermittentFastingDiet} />
+        <Stack.Screen name="HighProteinDiet" component={HighProteinDiet} />
+        <Stack.Screen name="MediterraneanDiet" component={MediterraneanDiet} />
+        <Stack.Screen name="VeganDiet" component={VeganDiet} />
+        <Stack.Screen name="VegetarianDiet" component={VegetarianDiet} />
       </Stack.Navigator>
     </NavigationContainer>
   );

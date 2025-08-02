@@ -182,26 +182,8 @@ export default function Dashboard({ navigation }) {
   ];
 
   const handleWorkoutPress = async (workout) => {
-    // Check if user has workout preferences set
-    try {
-      const profile = await getUserProfile(userId);
-      
-      if (!profile.workout_split) {
-        // First time user - navigate to preferences
-        navigation.navigate('Workout', { screen: 'WorkoutPreferences' });
-      } else {
-        // User has preferences - navigate to monthly plan
-        navigation.navigate('MonthlyWorkoutPlan', {
-          workoutSplit: profile.workout_split,
-          includeCardio: profile.include_cardio || false,
-          cardioType: profile.cardio_type || 'moderate',
-        });
-      }
-    } catch (error) {
-      console.error('Error checking workout preferences:', error);
-      // Fallback to preferences screen
-      navigation.navigate('Workout', { screen: 'WorkoutPreferences' });
-    }
+    // Navigate to the main workout screen which will handle preferences check
+    navigation.navigate('Workout', { screen: 'WorkoutMain' });
   };
 
   const renderWorkoutItem = ({ item }) => (
@@ -289,12 +271,6 @@ export default function Dashboard({ navigation }) {
             <Text style={dashboardStyles.welcomeText}>Hello, welcome back</Text>
             <Text style={dashboardStyles.userName}>{userName}</Text>
           </View>
-          <TouchableOpacity 
-            style={dashboardStyles.settingsButton}
-            onPress={() => navigation.navigate('Settings')}
-          >
-            <Ionicons name="settings-outline" size={24} color="#666" />
-          </TouchableOpacity>
         </View>
 
         {/* User Stats Section */}
