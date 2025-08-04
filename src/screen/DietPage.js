@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
+  Image,
+  FlatList,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -14,12 +16,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { getCurrentUserId } from '../api/auth';
 import { saveUserProfile, getUserProfile } from '../api/profile';
 import { getRecommendedExercises } from './diets/data/exerciseData';
-import AtkinsDiet from './src/screen/diets/AtkinsDiet';
-import IntermittentFastingDiet from './src/screen/diets/IntermittentFastingDiet';
-import HighProteinDiet from './src/screen/diets/HighProteinDiet';
-import MediterraneanDiet from './src/screen/diets/MediterraneanDiet';
-import VeganDiet from './src/screen/diets/VeganDiet';
-import VegetarianDiet from './src/screen/diets/VegetarianDiet';
+
 const Tab = createBottomTabNavigator();
 
 // User Preferences Screen
@@ -27,7 +24,7 @@ function UserPreferencesScreen({ navigation }) {
   const [selectedDietPreference, setSelectedDietPreference] = useState('');
   const [selectedWorkoutSplit, setSelectedWorkoutSplit] = useState('');
   const [userId, setUserId] = useState(null);
-
+  
   useEffect(() => {
     const loadUserData = async () => {
       try {
@@ -50,7 +47,7 @@ function UserPreferencesScreen({ navigation }) {
     
     loadUserData();
   }, []);
-
+  
   const dietPreferences = [
     { id: 'weight_loss', name: 'Weight Loss', icon: 'trending-down', color: '#E53935' },
     { id: 'muscle_gain', name: 'Muscle Gain', icon: 'barbell', color: '#44bd32' },
@@ -76,7 +73,7 @@ function UserPreferencesScreen({ navigation }) {
     try {
       if (userId) {
         await saveUserProfile({
-          user_id: userId,
+            user_id: userId,
           diet_preference: selectedDietPreference,
           workout_split: selectedWorkoutSplit,
         });
@@ -85,8 +82,8 @@ function UserPreferencesScreen({ navigation }) {
       navigation.navigate('RecommendedDietPlan', {
         dietPreference: selectedDietPreference,
         workoutSplit: selectedWorkoutSplit,
-      });
-    } catch (error) {
+        });
+      } catch (error) {
       console.error('Error saving preferences:', error);
       Alert.alert('Error', 'Failed to save preferences.');
     }
@@ -436,32 +433,38 @@ function RecommendedDietPlanScreen({ route }) {
               </View>
             </View>
           </View>
-        ) : activeTab === 'workouts' ? (
-          <View style={styles.workoutsContainer}>
-            {workoutData.map((day, dayIndex) => (
-              <View key={dayIndex} style={styles.workoutDayContainer}>
-                <Text style={styles.workoutDayTitle}>{day.day}</Text>
-                <ScrollView showsVerticalScrollIndicator={false}>
-                  {day.exercises.map((exercise, exerciseIndex) => (
-                    <View key={exerciseIndex} style={styles.exerciseCardContainer}>
-                      {renderExerciseCard(exercise)}
-                    </View>
-                  ))}
-                </ScrollView>
-              </View>
-            ))}
-          </View>
-        ) : (
-          <View style={styles.mealsContainer}>
-            <ScrollView showsVerticalScrollIndicator={false}>
-              {dietData[activeTab]?.map((meal, index) => (
-                <View key={index} style={styles.mealCardContainer}>
-                  {renderMealCard(meal)}
-                </View>
-              ))}
-            </ScrollView>
-          </View>
-        )}
+                 ) : activeTab === 'workouts' ? (
+           <View style={styles.workoutsContainer}>
+             {workoutData.map((day, dayIndex) => (
+               <View key={dayIndex} style={styles.workoutDayContainer}>
+                 <Text style={styles.workoutDayTitle}>{day.day}</Text>
+                 <FlatList
+                   data={day.exercises}
+                   keyExtractor={(item, index) => index.toString()}
+                   renderItem={({ item, index }) => (
+                     <View style={styles.exerciseCardContainer}>
+                       {renderExerciseCard(item)}
+                     </View>
+                   )}
+                   showsVerticalScrollIndicator={false}
+                 />
+               </View>
+             ))}
+           </View>
+                 ) : (
+           <View style={styles.mealsContainer}>
+             <FlatList
+               data={dietData[activeTab] || []}
+               keyExtractor={(item, index) => index.toString()}
+               renderItem={({ item, index }) => (
+                 <View style={styles.mealCardContainer}>
+                   {renderMealCard(item, index)}
+                 </View>
+               )}
+               showsVerticalScrollIndicator={false}
+             />
+           </View>
+         )}
 
         {/* Bottom spacing */}
         <View style={{ height: 80 }} />
@@ -993,4 +996,4 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#444',
   },
-}); 
+});
