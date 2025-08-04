@@ -889,6 +889,270 @@ app.post('/api/statistics/update', (req, res) => {
   );
 });
 
+// Profile Picture Routes
+app.post('/api/profile-picture', (req, res) => {
+  const { user_id, image_url } = req.body;
+  if (!user_id || !image_url) return res.status(400).json({ message: 'User ID and image URL required' });
+
+  // Deactivate old profile pictures
+  db.query('UPDATE profile_pictures SET is_active = FALSE WHERE user_id = ?', [user_id], (err) => {
+    if (err) return res.status(500).json({ message: 'Error updating profile pictures' });
+    
+    // Insert new profile picture
+    db.query(
+      'INSERT INTO profile_pictures (user_id, image_url) VALUES (?, ?)',
+      [user_id, image_url],
+      (err) => {
+        if (err) return res.status(500).json({ message: 'Error saving profile picture' });
+        res.json({ message: 'Profile picture updated successfully' });
+      }
+    );
+  });
+});
+
+app.get('/api/profile-picture/:userId', (req, res) => {
+  const userId = req.params.userId;
+  db.query(
+    'SELECT * FROM profile_pictures WHERE user_id = ? AND is_active = TRUE ORDER BY created_at DESC LIMIT 1',
+    [userId],
+    (err, results) => {
+      if (err) return res.status(500).json({ message: 'Error fetching profile picture' });
+      res.json(results[0] || null);
+    }
+  );
+});
+
+// Friends Routes
+app.post('/api/friends/request', (req, res) => {
+  const { user_id, friend_id } = req.body;
+  if (!user_id || !friend_id) return res.status(400).json({ message: 'User ID and friend ID required' });
+
+  db.query(
+    'INSERT INTO friends (user_id, friend_id, status) VALUES (?, ?, "pending")',
+    [user_id, friend_id],
+    (err) => {
+      if (err) return res.status(500).json({ message: 'Error sending friend request' });
+      res.json({ message: 'Friend request sent' });
+    }
+  );
+});
+
+app.post('/api/friends/accept', (req, res) => {
+  const { user_id, friend_id } = req.body;
+  if (!user_id || !friend_id) return res.status(400).json({ message: 'User ID and friend ID required' });
+
+  db.query(
+    'UPDATE friends SET status = "accepted" WHERE user_id = ? AND friend_id = ?',
+    [friend_id, user_id],
+    (err) => {
+      if (err) return res.status(500).json({ message: 'Error accepting friend request' });
+      
+      // Create reciprocal friendship
+      db.query(
+        'INSERT INTO friends (user_id, friend_id, status) VALUES (?, ?, "accepted")',
+        [user_id, friend_id],
+        (err) => {
+          if (err) console.error('Error creating reciprocal friendship:', err);
+          res.json({ message: 'Friend request accepted' });
+        }
+      );
+    }
+  );
+});
+
+app.get('/api/friends/:userId', (req, res) => {
+  const userId = req.params.userId;
+  db.query(
+    `SELECT f.*, u.name, u.email FROM friends f 
+     JOIN users u ON f.friend_id = u.id 
+     WHERE f.user_id = ? AND f.status = "accepted"`,
+    [userId],
+    (err, results) => {
+      if (err) return res.status(500).json({ message: 'Error fetching friends' });
+      res.json(results);
+    }
+  );
+});
+
+app.get('/api/friends/requests/:userId', (req, res) => {
+  const userId = req.params.userId;
+  db.query(
+    `SELECT f.*, u.name, u.email FROM friends f 
+     JOIN users u ON f.user_id = u.id 
+     WHERE f.friend_id = ? AND f.status = "pending"`,
+    [userId],
+    (err, results) => {
+      if (err) return res.status(500).json({ message: 'Error fetching friend requests' });
+      res.json(results);
+    }
+  );
+});
+
+// User Settings Routes
+app.post('/api/settings', (req, res) => {
+  const { user_id, notifications_enabled, privacy_mode, theme, units, language } = req.body;
+  if (!user_id) return res.status(400).json({ message: 'User ID required' });
+
+  db.query(
+    `INSERT INTO user_settings (user_id, notifications_enabled, privacy_mode, theme, units, language)
+     VALUES (?, ?, ?, ?, ?, ?)
+     ON DUPLICATE KEY UPDATE 
+       notifications_enabled=?, privacy_mode=?, theme=?, units=?, language=?`,
+    [
+      user_id, notifications_enabled, privacy_mode, theme, units, language,
+      notifications_enabled, privacy_mode, theme, units, language
+    ],
+    (err) => {
+      if (err) return res.status(500).json({ message: 'Error updating settings' });
+      res.json({ message: 'Settings updated successfully' });
+    }
+  );
+});
+
+app.get('/api/settings/:userId', (req, res) => {
+  const userId = req.params.userId;
+  db.query(
+    'SELECT * FROM user_settings WHERE user_id = ?',
+    [userId],
+    (err, results) => {
+      if (err) return res.status(500).json({ message: 'Error fetching settings' });
+      if (results.length === 0) {
+        return res.json({
+          user_id: parseInt(userId),
+          notifications_enabled: true,
+          privacy_mode: 'public',
+          theme: 'light',
+          units: 'metric',
+          language: 'en'
+        });
+      }
+      res.json(results[0]);
+    }
+  );
+});
+
+// Gamification Routes
+app.get('/api/level/:userId', (req, res) => {
+  const userId = req.params.userId;
+  db.query(
+    'SELECT * FROM user_levels WHERE user_id = ?',
+    [userId],
+    (err, results) => {
+      if (err) return res.status(500).json({ message: 'Error fetching user level' });
+      if (results.length === 0) {
+        return res.json({
+          user_id: parseInt(userId),
+          level: 1,
+          experience_points: 0
+        });
+      }
+      res.json(results[0]);
+    }
+  );
+});
+
+app.post('/api/level/update', (req, res) => {
+  const { user_id, experience_points } = req.body;
+  if (!user_id || !experience_points) return res.status(400).json({ message: 'User ID and experience points required' });
+
+  const newLevel = Math.floor(experience_points / 100) + 1;
+  
+  db.query(
+    `INSERT INTO user_levels (user_id, level, experience_points)
+     VALUES (?, ?, ?)
+     ON DUPLICATE KEY UPDATE 
+       level=?, experience_points=experience_points + ?`,
+    [user_id, newLevel, experience_points, newLevel, experience_points],
+    (err) => {
+      if (err) return res.status(500).json({ message: 'Error updating user level' });
+      res.json({ message: 'Level updated successfully', level: newLevel });
+    }
+  );
+});
+
+app.get('/api/badges/:userId', (req, res) => {
+  const userId = req.params.userId;
+  db.query(
+    `SELECT b.*, ub.earned_at FROM user_badges ub 
+     JOIN badges b ON ub.badge_id = b.id 
+     WHERE ub.user_id = ? ORDER BY ub.earned_at DESC`,
+    [userId],
+    (err, results) => {
+      if (err) return res.status(500).json({ message: 'Error fetching badges' });
+      res.json(results);
+    }
+  );
+});
+
+app.post('/api/badges/award', (req, res) => {
+  const { user_id, badge_id } = req.body;
+  if (!user_id || !badge_id) return res.status(400).json({ message: 'User ID and badge ID required' });
+
+  db.query(
+    'INSERT IGNORE INTO user_badges (user_id, badge_id) VALUES (?, ?)',
+    [user_id, badge_id],
+    (err) => {
+      if (err) return res.status(500).json({ message: 'Error awarding badge' });
+      res.json({ message: 'Badge awarded successfully' });
+    }
+  );
+});
+
+// Workout Sharing Routes
+app.post('/api/workouts/share', (req, res) => {
+  const { user_id, workout_type, duration, calories_burned, caption } = req.body;
+  if (!user_id || !workout_type) return res.status(400).json({ message: 'User ID and workout type required' });
+
+  db.query(
+    'INSERT INTO shared_workouts (user_id, workout_type, duration, calories_burned, caption) VALUES (?, ?, ?, ?, ?)',
+    [user_id, workout_type, duration, calories_burned, caption],
+    (err, result) => {
+      if (err) return res.status(500).json({ message: 'Error sharing workout' });
+      res.json({ message: 'Workout shared successfully', id: result.insertId });
+    }
+  );
+});
+
+app.get('/api/workouts/shared/:userId', (req, res) => {
+  const userId = req.params.userId;
+  db.query(
+    `SELECT sw.*, u.name as user_name FROM shared_workouts sw 
+     JOIN users u ON sw.user_id = u.id 
+     WHERE sw.user_id IN (
+       SELECT friend_id FROM friends WHERE user_id = ? AND status = 'accepted'
+       UNION SELECT ? 
+     ) ORDER BY sw.created_at DESC LIMIT 20`,
+    [userId, userId],
+    (err, results) => {
+      if (err) return res.status(500).json({ message: 'Error fetching shared workouts' });
+      res.json(results);
+    }
+  );
+});
+
+app.post('/api/workouts/like', (req, res) => {
+  const { user_id, shared_workout_id } = req.body;
+  if (!user_id || !shared_workout_id) return res.status(400).json({ message: 'User ID and workout ID required' });
+
+  db.query(
+    'INSERT IGNORE INTO workout_likes (user_id, shared_workout_id) VALUES (?, ?)',
+    [user_id, shared_workout_id],
+    (err) => {
+      if (err) return res.status(500).json({ message: 'Error liking workout' });
+      
+      // Update likes count
+      db.query(
+        'UPDATE shared_workouts SET likes_count = likes_count + 1 WHERE id = ?',
+        [shared_workout_id],
+        (err) => {
+          if (err) console.error('Error updating likes count:', err);
+          res.json({ message: 'Workout liked successfully' });
+        }
+      );
+    }
+  );
+});
+
 // Start server
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);

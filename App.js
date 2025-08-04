@@ -15,8 +15,17 @@ import CyclingChallenge from './src/screen/challenges/CyclingChallenge';
 import SwimChallenge from './src/screen/challenges/SwimChallenge';
 import ForgotPassword from './src/screen/login/ForgotPassword';
 import KetoDiet from './src/screen/diets/KetoDiet';
+import AtkinsDiet from './src/screen/diets/AtkinsDiet';
+import IntermittentFastingDiet from './src/screen/diets/IntermittentFastingDiet';
+import HighProteinDiet from './src/screen/diets/HighProteinDiet';
+import MediterraneanDiet from './src/screen/diets/MediterraneanDiet';
+import VeganDiet from './src/screen/diets/VeganDiet';
+import VegetarianDiet from './src/screen/diets/VegetarianDiet';
 import SprintChallenge from './src/screen/challenges/SprintChallange';
 import ShouldersWorkout from './src/screen/workouts/shouldersWorkout';
+import SettingsScreen from './src/screen/SettingsScreen';
+import FriendsScreen from './src/screen/FriendsScreen';
+import GamificationScreen from './src/screen/GamificationScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -51,7 +60,16 @@ export default function App() {
         <Stack.Screen name="SwimChallenge" component={SwimChallenge}/>
         <Stack.Screen name="SprintChallenge" component={SprintChallenge} />
         <Stack.Screen name="KetoDiet" component={KetoDiet} />
+        <Stack.Screen name="AtkinsDiet" component={AtkinsDiet} />
+        <Stack.Screen name="IntermittentFastingDiet" component={IntermittentFastingDiet} />
+        <Stack.Screen name="HighProteinDiet" component={HighProteinDiet} />
+        <Stack.Screen name="MediterraneanDiet" component={MediterraneanDiet} />
+        <Stack.Screen name="VeganDiet" component={VeganDiet} />
+        <Stack.Screen name="VegetarianDiet" component={VegetarianDiet} />
         <Stack.Screen name="ShouldersWorkout" component={ShouldersWorkout}/>
+        <Stack.Screen name="SettingsScreen" component={SettingsScreen} />
+        <Stack.Screen name="FriendsScreen" component={FriendsScreen} />
+        <Stack.Screen name="GamificationScreen" component={GamificationScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

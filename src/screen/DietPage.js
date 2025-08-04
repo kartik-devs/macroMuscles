@@ -197,10 +197,13 @@ function UserPreferencesScreen({ navigation }) {
 }
 
 // Recommended Diet Plan Screen
-function RecommendedDietPlanScreen({ route }) {
-  const { dietPreference, workoutSplit } = route.params;
+function RecommendedDietPlanScreen({route}) {
+  const { dietPreference, workoutSplit } = route.params|| {};
   const [activeTab, setActiveTab] = useState('breakfast');
   const [cheatDayUnlocked, setCheatDayUnlocked] = useState(false);
+
+  const defaultDietPreference = dietPreference || 'maintenance';
+const defaultWorkoutSplit = workoutSplit || 'push_pull_legs';
 
   // Diet recommendations based on preferences
   const getDietRecommendations = () => {
@@ -288,11 +291,11 @@ function RecommendedDietPlanScreen({ route }) {
       },
     };
 
-    return recommendations[dietPreference] || recommendations.maintenance;
+    return recommendations[defaultDietPreference] || recommendations.maintenance;
   };
 
   const dietData = getDietRecommendations();
-  const workoutData = getRecommendedExercises(workoutSplit, dietPreference);
+  const workoutData = getRecommendedExercises(defaultWorkoutSplit, defaultDietPreference);
 
   const renderMealCard = (meal) => (
     <View style={styles.mealCard}>
@@ -346,7 +349,7 @@ function RecommendedDietPlanScreen({ route }) {
       <View style={styles.planHeader}>
         <Text style={styles.planTitle}>Your Recommended Diet Plan</Text>
         <Text style={styles.planSubtitle}>
-          Based on your {dietPreference.replace('_', ' ')} preference and {workoutSplit.replace('_', ' ')} split
+          Based on your {defaultDietPreference.replace('', ' ')} preference and {defaultWorkoutSplit.replace('', ' ')} split
         </Text>
       </View>
 
@@ -514,8 +517,31 @@ function PopularDietPlansScreen({ navigation }) {
                     key={dIdx}
                     style={[styles.dietCard, { borderColor: diet.color }]}
                     onPress={() => {
-                      if (diet.name === 'Keto Diet') navigation.navigate('KetoDiet');
-                      // Add more navigation for other diets as you create their pages
+                      switch (diet.name) {
+                        case 'Keto Diet':
+                          navigation.navigate('KetoDiet');
+                          break;
+                        case 'Atkins Diet':
+                          navigation.navigate('AtkinsDiet');
+                          break;
+                        case 'Intermittent Fasting':
+                          navigation.navigate('IntermittentFastingDiet');
+                          break;
+                        case 'High Protein Diet':
+                          navigation.navigate('HighProteinDiet');
+                          break;
+                        case 'Mediterranean Diet':
+                          navigation.navigate('MediterraneanDiet');
+                          break;
+                        case 'Vegan Diet':
+                          navigation.navigate('VeganDiet');
+                          break;
+                        case 'Vegetarian Diet':
+                          navigation.navigate('VegetarianDiet');
+                          break;
+                        default:
+                          console.log('Diet not implemented yet:', diet.name);
+                      }
                     }}
                     activeOpacity={0.85}
                   >
