@@ -1,5 +1,4 @@
-const API_URL = 'http://10.0.2.2:3000/api'; // Android emulator
-// const API_URL = 'http://localhost:3000/api'; // iOS simulator
+import { API_URL } from "./config";
 
 // Profile Picture APIs
 export const uploadProfilePicture = async (userId, imageUrl) => {
