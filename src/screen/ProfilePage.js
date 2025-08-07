@@ -244,37 +244,158 @@ export default function ProfilePage() {
             <Ionicons name="settings" size={24} color="#666" />
             <Text style={styles.quickActionText}>Settings</Text>
           </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.quickAction}
+            onPress={() => Alert.alert('Share Profile', 'Share your fitness journey!')}
+          >
+            <Ionicons name="share-social" size={24} color="#44bd32" />
+            <Text style={styles.quickActionText}>Share</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Progress Overview */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Weekly Progress</Text>
+            <TouchableOpacity>
+              <Text style={styles.viewAllText}>View Details</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.progressOverview}>
+            <View style={styles.progressItem}>
+              <View style={styles.progressCircle}>
+                <Text style={styles.progressValue}>75%</Text>
+              </View>
+              <Text style={styles.progressLabel}>Workout Goal</Text>
+            </View>
+            <View style={styles.progressItem}>
+              <View style={[styles.progressCircle, { backgroundColor: '#f39c12' }]}>
+                <Text style={styles.progressValue}>5</Text>
+              </View>
+              <Text style={styles.progressLabel}>Day Streak</Text>
+            </View>
+            <View style={styles.progressItem}>
+              <View style={[styles.progressCircle, { backgroundColor: '#44bd32' }]}>
+                <Text style={styles.progressValue}>12</Text>
+              </View>
+              <Text style={styles.progressLabel}>This Week</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Body Measurements */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Body Measurements</Text>
+            <TouchableOpacity onPress={() => Alert.alert('Add Measurement', 'Track your progress!')}>
+              <Ionicons name="add" size={24} color="#0097e6" />
+            </TouchableOpacity>
+          </View>
+          <View style={styles.measurementGrid}>
+            <View style={styles.measurementCard}>
+              <Text style={styles.measurementValue}>75.2</Text>
+              <Text style={styles.measurementUnit}>kg</Text>
+              <Text style={styles.measurementLabel}>Weight</Text>
+              <Text style={styles.measurementChange}>-0.5kg this week</Text>
+            </View>
+            <View style={styles.measurementCard}>
+              <Text style={styles.measurementValue}>18.5</Text>
+              <Text style={styles.measurementUnit}>%</Text>
+              <Text style={styles.measurementLabel}>Body Fat</Text>
+              <Text style={styles.measurementChange}>-1.2% this month</Text>
+            </View>
+          </View>
         </View>
 
         {/* User Statistics Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Statistics</Text>
+            <Text style={styles.sectionTitle}>All-Time Stats</Text>
+            <TouchableOpacity>
+              <Text style={styles.viewAllText}>Analytics</Text>
+            </TouchableOpacity>
           </View>
           
           <View style={styles.statsContainer}>
             <View style={styles.statItem}>
               <Text style={styles.statValue}>{userStats.total_workouts}</Text>
               <Text style={styles.statLabel}>Workouts</Text>
+              <View style={styles.statTrend}>
+                <Ionicons name="trending-up" size={12} color="#44bd32" />
+                <Text style={styles.statTrendText}>+12%</Text>
+              </View>
             </View>
             
             <View style={styles.statItem}>
               <Text style={styles.statValue}>{userStats.total_calories_burned}</Text>
               <Text style={styles.statLabel}>Calories</Text>
+              <View style={styles.statTrend}>
+                <Ionicons name="trending-up" size={12} color="#44bd32" />
+                <Text style={styles.statTrendText}>+8%</Text>
+              </View>
             </View>
             
             <View style={styles.statItem}>
               <Text style={styles.statValue}>{formatTime(userStats.total_workout_time)}</Text>
               <Text style={styles.statLabel}>Time</Text>
+              <View style={styles.statTrend}>
+                <Ionicons name="trending-up" size={12} color="#44bd32" />
+                <Text style={styles.statTrendText}>+15%</Text>
+              </View>
             </View>
             
             <View style={styles.statItem}>
               <Text style={styles.statValue}>{userLevel.experience_points}</Text>
               <Text style={styles.statLabel}>XP</Text>
+              <View style={styles.statTrend}>
+                <Ionicons name="star" size={12} color="#f39c12" />
+                <Text style={styles.statTrendText}>Lvl {userLevel.level}</Text>
+              </View>
             </View>
           </View>
         </View>
         
+        {/* Recent Activity */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Recent Activity</Text>
+            <TouchableOpacity>
+              <Text style={styles.viewAllText}>View All</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.activityList}>
+            <View style={styles.activityItem}>
+              <View style={[styles.activityIcon, { backgroundColor: '#E53935' }]}>
+                <Ionicons name="fitness" size={16} color="#fff" />
+              </View>
+              <View style={styles.activityInfo}>
+                <Text style={styles.activityTitle}>Chest & Back Workout</Text>
+                <Text style={styles.activityTime}>2 hours ago • 45 min</Text>
+              </View>
+              <Text style={styles.activityCalories}>320 cal</Text>
+            </View>
+            <View style={styles.activityItem}>
+              <View style={[styles.activityIcon, { backgroundColor: '#f39c12' }]}>
+                <Ionicons name="trophy" size={16} color="#fff" />
+              </View>
+              <View style={styles.activityInfo}>
+                <Text style={styles.activityTitle}>Earned "Streak Master" badge</Text>
+                <Text style={styles.activityTime}>Yesterday</Text>
+              </View>
+            </View>
+            <View style={styles.activityItem}>
+              <View style={[styles.activityIcon, { backgroundColor: '#44bd32' }]}>
+                <Ionicons name="restaurant" size={16} color="#fff" />
+              </View>
+              <View style={styles.activityInfo}>
+                <Text style={styles.activityTitle}>Logged healthy meal</Text>
+                <Text style={styles.activityTime}>Yesterday • Lunch</Text>
+              </View>
+              <Text style={styles.activityCalories}>450 cal</Text>
+            </View>
+          </View>
+        </View>
+
         {/* Recent Badges */}
         {userBadges.length > 0 && (
           <View style={styles.section}>
@@ -296,6 +417,31 @@ export default function ProfilePage() {
             </ScrollView>
           </View>
         )}
+
+        {/* Workout Calendar Preview */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>This Week</Text>
+            <TouchableOpacity>
+              <Text style={styles.viewAllText}>Full Calendar</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.weekCalendar}>
+            {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, index) => (
+              <View key={index} style={styles.dayItem}>
+                <Text style={styles.dayLabel}>{day}</Text>
+                <View style={[
+                  styles.dayCircle, 
+                  index < 4 && styles.completedDay,
+                  index === 4 && styles.todayDay
+                ]}>
+                  {index < 4 && <Ionicons name="checkmark" size={12} color="#fff" />}
+                  {index === 4 && <Text style={styles.todayText}>•</Text>}
+                </View>
+              </View>
+            ))}
+          </View>
+        </View>
         
         {/* Achievements Section */}
         <View style={styles.section}>
@@ -529,6 +675,144 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#666',
     marginTop: 5,
+  },
+  progressOverview: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingHorizontal: 15,
+  },
+  progressItem: {
+    alignItems: 'center',
+  },
+  progressCircle: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#0097e6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  progressValue: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  progressLabel: {
+    fontSize: 12,
+    color: '#666',
+    textAlign: 'center',
+  },
+  measurementGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 15,
+  },
+  measurementCard: {
+    backgroundColor: '#f8f9fa',
+    borderRadius: 12,
+    padding: 15,
+    alignItems: 'center',
+    width: '48%',
+  },
+  measurementValue: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  measurementUnit: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: -5,
+  },
+  measurementLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginTop: 5,
+    color: '#333',
+  },
+  measurementChange: {
+    fontSize: 11,
+    color: '#44bd32',
+    marginTop: 2,
+  },
+  statTrend: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 2,
+  },
+  statTrendText: {
+    fontSize: 10,
+    color: '#44bd32',
+    marginLeft: 2,
+  },
+  activityList: {
+    paddingHorizontal: 15,
+  },
+  activityItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  activityIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  activityInfo: {
+    flex: 1,
+  },
+  activityTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+  },
+  activityTime: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 2,
+  },
+  activityCalories: {
+    fontSize: 12,
+    color: '#0097e6',
+    fontWeight: '600',
+  },
+  weekCalendar: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingHorizontal: 15,
+  },
+  dayItem: {
+    alignItems: 'center',
+  },
+  dayLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 8,
+  },
+  dayCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#f0f0f0',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  completedDay: {
+    backgroundColor: '#44bd32',
+  },
+  todayDay: {
+    backgroundColor: '#0097e6',
+  },
+  todayText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   badgeItem: {
     alignItems: 'center',

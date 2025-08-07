@@ -1,4 +1,4 @@
-import { API_URL } from "./config";
+
 
 // Profile Picture APIs
 export const uploadProfilePicture = async (userId, imageUrl) => {
