@@ -24,6 +24,8 @@ import {
 } from '../api/profile';
 
 import { getCurrentUserId } from '../api/auth';
+import { getProfilePicture, getUserLevel, getUserBadges } from '../api/profileEnhancements';
+import ProfilePictureUpload from './ProfilePictureUpload';
 
 export default function ProfilePage() {
   const [userId, setUserId] = useState(null);
@@ -40,6 +42,10 @@ export default function ProfilePage() {
   });
   const [achievements, setAchievements] = useState([]);
   const [editModalVisible, setEditModalVisible] = useState(false);
+  const [profilePictureModalVisible, setProfilePictureModalVisible] = useState(false);
+  const [profilePicture, setProfilePicture] = useState(null);
+  const [userLevel, setUserLevel] = useState({ level: 1, experience_points: 0 });
+  const [userBadges, setUserBadges] = useState([]);
   const [editForm, setEditForm] = useState({
     display_name: '',
     height: '',
@@ -75,6 +81,25 @@ export default function ProfilePage() {
           // Load achievements
           const ach = await getAchievements(id);
           setAchievements(ach);
+          
+          // Load profile picture
+          try {
+            const profilePic = await getProfilePicture(id);
+            setProfilePicture(profilePic);
+          } catch (error) {
+            console.log('Profile picture API not available');
+          }
+          
+          // Load gamification data
+          try {
+            const levelData = await getUserLevel(id);
+            setUserLevel(levelData);
+            
+            const badgesData = await getUserBadges(id);
+            setUserBadges(badgesData.slice(0, 3)); // Show only first 3 badges
+          } catch (error) {
+            console.log('Gamification API not available');
+          }
         }
       } catch (error) {
         console.error('Error loading user data:', error);
@@ -165,14 +190,59 @@ export default function ProfilePage() {
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Profile Header */}
         <View style={styles.profileHeader}>
-          <View style={styles.avatarContainer}>
-            <Text style={styles.avatarText}>{userProfile.avatar_initial}</Text>
-          </View>
+          <TouchableOpacity 
+            style={styles.avatarContainer}
+            onPress={() => setProfilePictureModalVisible(true)}
+          >
+            {profilePicture && profilePicture.image_url && !profilePicture.image_url.startsWith('avatar_') ? (
+              <Image source={{ uri: profilePicture.image_url }} style={styles.avatarImage} />
+            ) : profilePicture && profilePicture.image_url && profilePicture.image_url.startsWith('avatar_') ? (
+              <Text style={styles.avatarEmoji}>
+                {profilePicture.image_url.split('_')[2] || '💪'}
+              </Text>
+            ) : (
+              <Text style={styles.avatarText}>{userProfile.avatar_initial}</Text>
+            )}
+            <View style={styles.cameraIcon}>
+              <Ionicons name="camera" size={16} color="#fff" />
+            </View>
+          </TouchableOpacity>
           
           <Text style={styles.userName}>{userProfile.display_name}</Text>
           
+          {/* Level Badge */}
+          <View style={styles.levelBadge}>
+            <Ionicons name="star" size={16} color="#f39c12" />
+            <Text style={styles.levelText}>Level {userLevel.level}</Text>
+          </View>
+          
           <TouchableOpacity style={styles.editButton} onPress={handleEditProfile}>
             <Text style={styles.editButtonText}>edit</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Quick Actions */}
+        <View style={styles.quickActions}>
+          <TouchableOpacity 
+            style={styles.quickAction}
+            onPress={() => navigation.navigate('FriendsScreen')}
+          >
+            <Ionicons name="people" size={24} color="#0097e6" />
+            <Text style={styles.quickActionText}>Friends</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.quickAction}
+            onPress={() => navigation.navigate('GamificationScreen')}
+          >
+            <Ionicons name="trophy" size={24} color="#f39c12" />
+            <Text style={styles.quickActionText}>Achievements</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.quickAction}
+            onPress={() => navigation.navigate('SettingsScreen')}
+          >
+            <Ionicons name="settings" size={24} color="#666" />
+            <Text style={styles.quickActionText}>Settings</Text>
           </TouchableOpacity>
         </View>
 
@@ -197,8 +267,35 @@ export default function ProfilePage() {
               <Text style={styles.statValue}>{formatTime(userStats.total_workout_time)}</Text>
               <Text style={styles.statLabel}>Time</Text>
             </View>
+            
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>{userLevel.experience_points}</Text>
+              <Text style={styles.statLabel}>XP</Text>
+            </View>
           </View>
         </View>
+        
+        {/* Recent Badges */}
+        {userBadges.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Recent Badges</Text>
+              <TouchableOpacity onPress={() => navigation.navigate('GamificationScreen')}>
+                <Text style={styles.viewAllText}>View All</Text>
+              </TouchableOpacity>
+            </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              {userBadges.map((badge, index) => (
+                <View key={index} style={styles.badgeItem}>
+                  <View style={[styles.badgeIcon, { backgroundColor: badge.color || '#0097e6' }]}>
+                    <Ionicons name={badge.icon || 'trophy'} size={20} color="#fff" />
+                  </View>
+                  <Text style={styles.badgeName}>{badge.name}</Text>
+                </View>
+              ))}
+            </ScrollView>
+          </View>
+        )}
         
         {/* Achievements Section */}
         <View style={styles.section}>
@@ -326,6 +423,16 @@ export default function ProfilePage() {
           </View>
         </View>
       </Modal>
+
+      {/* Profile Picture Upload Modal */}
+      <ProfilePictureUpload
+        visible={profilePictureModalVisible}
+        onClose={() => setProfilePictureModalVisible(false)}
+        userId={userId}
+        onSuccess={(imageUrl) => {
+          setProfilePicture({ image_url: imageUrl });
+        }}
+      />
     </SafeAreaView>
   );
 }
@@ -358,6 +465,23 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 10,
+    position: 'relative',
+  },
+  avatarImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+  },
+  avatarEmoji: {
+    fontSize: 40,
+  },
+  cameraIcon: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    backgroundColor: '#0097e6',
+    borderRadius: 12,
+    padding: 4,
   },
   avatarText: {
     fontSize: 48,
@@ -368,6 +492,65 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     marginVertical: 5,
+  },
+  levelBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff3cd',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 15,
+    marginBottom: 10,
+  },
+  levelText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#f39c12',
+    marginLeft: 4,
+  },
+  quickActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    backgroundColor: '#fff',
+    marginHorizontal: 15,
+    marginTop: 10,
+    borderRadius: 12,
+    paddingVertical: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  quickAction: {
+    alignItems: 'center',
+  },
+  quickActionText: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 5,
+  },
+  badgeItem: {
+    alignItems: 'center',
+    marginRight: 15,
+    width: 80,
+  },
+  badgeIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 5,
+  },
+  badgeName: {
+    fontSize: 10,
+    textAlign: 'center',
+    color: '#666',
+  },
+  viewAllText: {
+    fontSize: 14,
+    color: '#0097e6',
   },
   editButton: {
     position: 'absolute',
@@ -411,6 +594,7 @@ const styles = StyleSheet.create({
   },
   statItem: {
     alignItems: 'center',
+    flex: 1,
   },
   statValue: {
     fontSize: 24,
