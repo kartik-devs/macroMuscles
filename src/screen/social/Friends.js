@@ -30,6 +30,7 @@ export default function Friends({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [searching, setSearching] = useState(false);
   const [activeTab, setActiveTab] = useState('friends'); // 'friends', 'requests', 'search'
+  const [recentSearches, setRecentSearches] = useState([]);
 
   useEffect(() => {
     loadUserData();
@@ -78,26 +79,67 @@ export default function Friends({ navigation }) {
     try {
       setSearching(true);
       const results = await searchUsers(searchQuery);
-      // Filter out current user from results
-      const filteredResults = results.filter(user => user.id !== userId);
+      
+      // Filter out current user from results and handle MongoDB _id
+      const filteredResults = results.filter(user => user._id !== userId && user.id !== userId);
+      
       setSearchResults(filteredResults);
       setActiveTab('search');
+      addToRecentSearches(searchQuery);
+      
+      if (filteredResults.length === 0) {
+        // Show a helpful message when no results are found
+        Alert.alert('No Results', `No users found matching "${searchQuery}". Try a different search term.`);
+      }
     } catch (error) {
       console.error('Error searching users:', error);
-      Alert.alert('Error', 'Failed to search users');
+      Alert.alert('Search Error', error.message || 'Failed to search users');
     } finally {
       setSearching(false);
     }
   };
 
+  // Real-time search with debouncing
+  const handleSearchChange = (text) => {
+    setSearchQuery(text);
+    if (text.trim().length >= 2) {
+      // Debounce search for better performance
+      const timeoutId = setTimeout(() => {
+        handleSearch();
+      }, 300); // Reduced from 500ms to 300ms for better responsiveness
+      return () => clearTimeout(timeoutId);
+    } else {
+      setSearchResults([]);
+      setActiveTab('friends');
+    }
+  };
+
+  // Add search to recent searches
+  const addToRecentSearches = (query) => {
+    if (query.trim()) {
+      setRecentSearches(prev => {
+        const filtered = prev.filter(item => item !== query);
+        return [query, ...filtered].slice(0, 5); // Keep only 5 recent searches
+      });
+    }
+  };
+
+  // Handle recent search selection
+  const handleRecentSearch = (query) => {
+    setSearchQuery(query);
+    handleSearch();
+  };
+
   const handleSendFriendRequest = async (friendId) => {
     try {
-      await sendFriendRequest(userId, friendId);
+      const result = await sendFriendRequest(userId, friendId);
+      
       Alert.alert('Success', 'Friend request sent successfully');
       
       // Update search results to show pending status
       const updatedResults = searchResults.map(user => {
-        if (user.id === friendId) {
+        const userId = user._id || user.id;
+        if (userId === friendId) {
           return { ...user, requestSent: true };
         }
         return user;
@@ -130,61 +172,69 @@ export default function Friends({ navigation }) {
     }
   };
 
-  const renderFriendItem = ({ item }) => (
-    <View style={styles.userCard}>
-      <View style={styles.userInfo}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>{item.name.charAt(0)}</Text>
+  const renderFriendItem = ({ item }) => {
+    const userId = item._id || item.id;
+    return (
+      <View style={styles.userCard}>
+        <View style={styles.userInfo}>
+          <View style={styles.avatar}>
+            <Text style={styles.avatarText}>{item.name.charAt(0)}</Text>
+          </View>
+          <View>
+            <Text style={styles.userName}>{item.name}</Text>
+            <Text style={styles.userEmail}>{item.email}</Text>
+          </View>
         </View>
-        <View>
-          <Text style={styles.userName}>{item.name}</Text>
-          <Text style={styles.userEmail}>{item.email}</Text>
-        </View>
-      </View>
-      
-      <TouchableOpacity 
-        style={styles.actionButton}
-        onPress={() => navigation.navigate('UserProfile', { userId: item.id })}
-      >
-        <Ionicons name="person" size={20} color="#E53935" />
-        <Text style={[styles.actionText, { color: '#E53935' }]}>Profile</Text>
-      </TouchableOpacity>
-    </View>
-  );
-
-  const renderRequestItem = ({ item }) => (
-    <View style={styles.userCard}>
-      <View style={styles.userInfo}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>{item.name.charAt(0)}</Text>
-        </View>
-        <View>
-          <Text style={styles.userName}>{item.name}</Text>
-          <Text style={styles.userEmail}>{item.email}</Text>
-        </View>
-      </View>
-      
-      <View style={styles.requestActions}>
-        <TouchableOpacity 
-          style={[styles.requestButton, styles.acceptButton]}
-          onPress={() => handleRespondToRequest(item.id, 'accepted')}
-        >
-          <Text style={styles.requestButtonText}>Accept</Text>
-        </TouchableOpacity>
         
         <TouchableOpacity 
-          style={[styles.requestButton, styles.rejectButton]}
-          onPress={() => handleRespondToRequest(item.id, 'rejected')}
+          style={styles.actionButton}
+          onPress={() => navigation.navigate('UserProfile', { userId: userId })}
         >
-          <Text style={[styles.requestButtonText, { color: '#e74c3c' }]}>Decline</Text>
+          <Ionicons name="person" size={20} color="#E53935" />
+          <Text style={[styles.actionText, { color: '#E53935' }]}>Profile</Text>
         </TouchableOpacity>
       </View>
-    </View>
-  );
+    );
+  };
+
+  const renderRequestItem = ({ item }) => {
+    const userId = item._id || item.id;
+    return (
+      <View style={styles.userCard}>
+        <View style={styles.userInfo}>
+          <View style={styles.avatar}>
+            <Text style={styles.avatarText}>{item.name.charAt(0)}</Text>
+          </View>
+          <View>
+            <Text style={styles.userName}>{item.name}</Text>
+            <Text style={styles.userEmail}>{item.email}</Text>
+          </View>
+        </View>
+        
+        <View style={styles.requestActions}>
+          <TouchableOpacity 
+            style={[styles.requestButton, styles.acceptButton]}
+            onPress={() => handleRespondToRequest(userId, 'accepted')}
+          >
+            <Text style={styles.requestButtonText}>Accept</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={[styles.requestButton, styles.rejectButton]}
+            onPress={() => handleRespondToRequest(userId, 'rejected')}
+          >
+            <Text style={[styles.requestButtonText, { color: '#e74c3c' }]}>Decline</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  };
 
   const renderSearchResultItem = ({ item }) => {
+    const userId = item._id || item.id;
+    
     // Check if this user is already a friend
-    const isFriend = friends.some(friend => friend.id === item.id);
+    const isFriend = friends.some(friend => (friend._id || friend.id) === userId);
     // Check if request is already sent (from updated search results)
     const requestSent = item.requestSent;
     
@@ -213,7 +263,7 @@ export default function Friends({ navigation }) {
         ) : (
           <TouchableOpacity 
             style={styles.addButton}
-            onPress={() => handleSendFriendRequest(item.id)}
+            onPress={() => handleSendFriendRequest(userId)}
           >
             <Ionicons name="person-add" size={20} color="#fff" />
             <Text style={styles.addButtonText}>Add</Text>
@@ -249,10 +299,10 @@ export default function Friends({ navigation }) {
       <View style={styles.searchContainer}>
         <TextInput
           style={styles.searchInput}
-          placeholder="Search for friends..."
+          placeholder="Search for friends... (min 2 characters)"
           placeholderTextColor={'#000'}
           value={searchQuery}
-          onChangeText={setSearchQuery}
+          onChangeText={handleSearchChange}
           onSubmitEditing={handleSearch}
           returnKeyType="search"
         />
@@ -307,7 +357,7 @@ export default function Friends({ navigation }) {
             <Text style={[
               styles.tabText,
               activeTab === 'search' && styles.activeTabText
-            ]}>Results</Text>
+            ]}>Results ({searchResults.length})</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -316,7 +366,7 @@ export default function Friends({ navigation }) {
         <FlatList
           data={friends}
           renderItem={renderFriendItem}
-          keyExtractor={item => item.id.toString()}
+          keyExtractor={item => (item._id || item.id).toString()}
           contentContainerStyle={styles.list}
           ListEmptyComponent={() => renderEmptyList("You don't have any friends yet")}
         />
@@ -326,7 +376,7 @@ export default function Friends({ navigation }) {
         <FlatList
           data={friendRequests}
           renderItem={renderRequestItem}
-          keyExtractor={item => item.id.toString()}
+          keyExtractor={item => (item._id || item.id).toString()}
           contentContainerStyle={styles.list}
           ListEmptyComponent={() => renderEmptyList("No pending friend requests")}
         />
@@ -336,10 +386,41 @@ export default function Friends({ navigation }) {
         <FlatList
           data={searchResults}
           renderItem={renderSearchResultItem}
-          keyExtractor={item => item.id.toString()}
+          keyExtractor={item => (item._id || item.id).toString()}
           contentContainerStyle={styles.list}
           ListEmptyComponent={() => renderEmptyList("No users found")}
         />
+      )}
+      
+      {activeTab === 'friends' && friends.length === 0 && searchQuery.trim().length === 0 && (
+        <View style={styles.discoverContainer}>
+          <Text style={styles.discoverTitle}>Discover People</Text>
+          <Text style={styles.discoverText}>
+            Start by searching for friends using their name or email address.
+          </Text>
+          <View style={styles.searchHint}>
+            <Ionicons name="search" size={20} color="#E53935" />
+            <Text style={styles.searchHintText}>Type at least 2 characters to search</Text>
+          </View>
+          
+          {recentSearches.length > 0 && (
+            <View style={styles.recentSearchesContainer}>
+              <Text style={styles.recentSearchesTitle}>Recent Searches</Text>
+              <View style={styles.recentSearchesList}>
+                {recentSearches.map((query, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    style={styles.recentSearchItem}
+                    onPress={() => handleRecentSearch(query)}
+                  >
+                    <Ionicons name="time-outline" size={16} color="#666" />
+                    <Text style={styles.recentSearchText}>{query}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          )}
+        </View>
       )}
       </View>
     </SafeAreaView>
@@ -534,5 +615,73 @@ const styles = StyleSheet.create({
     color: '#666',
     marginTop: 10,
     textAlign: 'center',
+  },
+  discoverContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 30,
+    paddingVertical: 40,
+  },
+  discoverTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  discoverText: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 25,
+  },
+  searchHint: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    borderRadius: 25,
+    borderWidth: 1,
+    borderColor: '#E53935',
+  },
+  searchHintText: {
+    marginLeft: 10,
+    fontSize: 14,
+    color: '#E53935',
+    fontWeight: '500',
+  },
+  recentSearchesContainer: {
+    marginTop: 30,
+    width: '100%',
+  },
+  recentSearchesTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  recentSearchesList: {
+    alignItems: 'center',
+  },
+  recentSearchItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 20,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#eee',
+    minWidth: 200,
+  },
+  recentSearchText: {
+    marginLeft: 10,
+    fontSize: 14,
+    color: '#333',
   },
 });

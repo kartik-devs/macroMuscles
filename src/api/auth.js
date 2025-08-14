@@ -43,7 +43,8 @@ export const getCurrentUserId = async () => {
     const userData = await AsyncStorage.getItem('userData');
     if (userData) {
       const user = JSON.parse(userData);
-      return user.id;
+      // MongoDB uses _id, not id
+      return user._id || user.id;
     }
     return null;
   } catch (error) {

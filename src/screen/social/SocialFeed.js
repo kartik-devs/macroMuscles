@@ -25,9 +25,17 @@ export default function SocialFeed({ navigation }) {
   const [refreshing, setRefreshing] = useState(false);
   const [commentText, setCommentText] = useState('');
   const [activeCommentPost, setActiveCommentPost] = useState(null);
+  const [loadingTime, setLoadingTime] = useState(0);
 
   useEffect(() => {
     loadUserData();
+    
+    // Add loading timer
+    const timer = setInterval(() => {
+      setLoadingTime(prev => prev + 1);
+    }, 1000);
+    
+    return () => clearInterval(timer);
   }, []);
 
   const loadUserData = async () => {
@@ -45,11 +53,25 @@ export default function SocialFeed({ navigation }) {
   const loadFeed = async (id) => {
     try {
       setLoading(true);
-      const feedData = await getSocialFeed(id);
+      console.log('Loading feed for user:', id);
+      
+      // Add timeout to prevent infinite loading
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Request timeout')), 10000)
+      );
+      
+      const feedData = await Promise.race([
+        getSocialFeed(id),
+        timeoutPromise
+      ]);
+      
+      console.log('Feed data received:', feedData);
       setFeed(Array.isArray(feedData) ? feedData : []);
+      setLoadingTime(0); // Reset loading time on success
     } catch (error) {
       console.error('Error loading feed:', error);
-      Alert.alert('Error', 'Failed to load social feed');
+      console.error('Error details:', error.message, error.response?.data);
+      Alert.alert('Error', `Failed to load social feed: ${error.message}`);
       setFeed([]);
     } finally {
       setLoading(false);
@@ -240,6 +262,22 @@ export default function SocialFeed({ navigation }) {
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#E53935" />
         <Text style={styles.loadingText}>Loading social feed...</Text>
+        {loadingTime > 5 && (
+          <Text style={styles.loadingSubtext}>
+            Taking longer than usual. Check your connection.
+          </Text>
+        )}
+        {loadingTime > 10 && (
+          <TouchableOpacity 
+            style={styles.retryButton}
+            onPress={() => {
+              setLoadingTime(0);
+              loadFeed(userId);
+            }}
+          >
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </TouchableOpacity>
+        )}
       </View>
     );
   }
@@ -328,6 +366,24 @@ const styles = StyleSheet.create({
     marginTop: 10,
     fontSize: 16,
     color: '#666',
+  },
+  loadingSubtext: {
+    marginTop: 8,
+    fontSize: 14,
+    color: '#999',
+    textAlign: 'center',
+  },
+  retryButton: {
+    marginTop: 15,
+    backgroundColor: '#E53935',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '500',
   },
   feedList: {
     paddingVertical: 10,

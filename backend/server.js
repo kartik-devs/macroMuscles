@@ -14,6 +14,10 @@ const DailyNutrition = require('./models/DailyNutrition');
 const UserGoal = require('./models/UserGoal');
 const PersonalBest = require('./models/PersonalBest');
 const UserStatistics = require('./models/UserStatistics');
+const Friend = require('./models/Friend');
+const SharedWorkout = require('./models/SharedWorkout');
+const WorkoutLike = require('./models/WorkoutLike');
+const WorkoutComment = require('./models/WorkoutComment');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key';
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/macromuscles';
@@ -388,6 +392,45 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Server is running' });
 });
 
+// Temporary endpoint to add sample users for testing
+app.post('/api/test/add-sample-users', async (req, res) => {
+  try {
+    const sampleUsers = [
+      { name: 'John Doe', email: 'john@example.com', password: 'password123' },
+      { name: 'Jane Smith', email: 'jane@example.com', password: 'password123' },
+      { name: 'Mike Johnson', email: 'mike@example.com', password: 'password123' },
+      { name: 'Sarah Wilson', email: 'sarah@example.com', password: 'password123' },
+      { name: 'David Brown', email: 'david@example.com', password: 'password123' },
+      { name: 'Emily Davis', email: 'emily@example.com', password: 'password123' },
+      { name: 'Robert Taylor', email: 'robert@example.com', password: 'password123' },
+      { name: 'Lisa Anderson', email: 'lisa@example.com', password: 'password123' }
+    ];
+    
+    const createdUsers = [];
+    for (const userData of sampleUsers) {
+      try {
+        const existingUser = await User.findOne({ email: userData.email });
+        if (!existingUser) {
+          const user = new User(userData);
+          await user.save();
+          createdUsers.push({ id: user._id, name: user.name, email: user.email });
+        }
+      } catch (error) {
+        console.error(`Error creating user ${userData.email}:`, error);
+      }
+    }
+    
+    res.json({ 
+      message: `Added ${createdUsers.length} sample users`,
+      users: createdUsers
+    });
+  } catch (error) {
+    console.error('Error adding sample users:', error);
+    res.status(500).json({ message: 'Error adding sample users' });
+  }
+});
+
+
 // Update user profile
 app.post('/api/profile', async (req, res) => {
   try {
@@ -518,51 +561,323 @@ app.get('/api/statistics/:userId', async (req, res) => {
   }
 });
 
-// Social feed endpoint
-app.get('/api/social/feed/:userId', (req, res) => {
+// Friends Routes
+// Search for users
+app.get('/api/users/search', authenticateToken, async (req, res) => {
+  try {
+    const { q } = req.query;
+    if (!q || q.trim().length < 2) {
+      return res.status(400).json({ message: 'Search query must be at least 2 characters' });
+    }
+    
+    const users = await User.find({
+      $or: [
+        { name: { $regex: q, $options: 'i' } },
+        { email: { $regex: q, $options: 'i' } }
+      ]
+    }).select('name email').limit(20);
+    
+    res.json(users);
+  } catch (error) {
+    console.error('Error searching users:', error);
+    res.status(500).json({ message: 'Error searching users' });
+  }
+});
+
+// Send friend request
+app.post('/api/friends/request', authenticateToken, async (req, res) => {
+  try {
+    const { user_id, friend_id } = req.body;
+    
+    if (!user_id || !friend_id) {
+      return res.status(400).json({ message: 'User ID and friend ID are required' });
+    }
+    
+    if (user_id === friend_id) {
+      return res.status(400).json({ message: 'Cannot send friend request to yourself' });
+    }
+    
+    // Check if users exist
+    const [user, friend] = await Promise.all([
+      User.findById(user_id),
+      User.findById(friend_id)
+    ]);
+    
+    if (!user || !friend) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Check if friendship already exists
+    const existingFriendship = await Friend.findOne({
+      $or: [
+        { user_id, friend_id },
+        { user_id: friend_id, friend_id: user_id }
+      ]
+    });
+    
+    if (existingFriendship) {
+      if (existingFriendship.status === 'accepted') {
+        return res.status(400).json({ message: 'You are already friends' });
+      } else if (existingFriendship.status === 'pending') {
+        if (existingFriendship.user_id.equals(user_id)) {
+          return res.status(400).json({ message: 'Friend request already sent' });
+        } else {
+          return res.status(400).json({ message: 'You already have a pending request from this user' });
+        }
+      }
+    }
+    
+    // Create friend request
+    const friendRequest = new Friend({
+      user_id,
+      friend_id,
+      status: 'pending'
+    });
+    
+    await friendRequest.save();
+    
+    res.status(201).json({ message: 'Friend request sent successfully' });
+  } catch (error) {
+    console.error('Error sending friend request:', error);
+    res.status(500).json({ message: 'Error sending friend request' });
+  }
+});
+
+// Get friend requests for a user
+app.get('/api/friends/requests/:userId', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    const requests = await Friend.getPendingRequests(userId);
+    res.json(requests);
+  } catch (error) {
+    console.error('Error getting friend requests:', error);
+    res.status(500).json({ message: 'Error getting friend requests' });
+  }
+});
+
+// Respond to friend request
+app.put('/api/friends/request/:requestId', authenticateToken, async (req, res) => {
+  try {
+    const { requestId } = req.params;
+    const { status } = req.body;
+    
+    if (!['accepted', 'rejected'].includes(status)) {
+      return res.status(400).json({ message: 'Status must be accepted or rejected' });
+    }
+    
+    const friendRequest = await Friend.findById(requestId);
+    if (!friendRequest) {
+      return res.status(404).json({ message: 'Friend request not found' });
+    }
+    
+    friendRequest.status = status;
+    friendRequest.updated_at = new Date();
+    await friendRequest.save();
+    
+    res.json({ message: `Friend request ${status}` });
+  } catch (error) {
+    console.error('Error responding to friend request:', error);
+    res.status(500).json({ message: 'Error responding to friend request' });
+  }
+});
+
+// Get friends list
+app.get('/api/friends/:userId', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    const friends = await Friend.getFriends(userId);
+    res.json(friends);
+  } catch (error) {
+    console.error('Error getting friends:', error);
+    res.status(500).json({ message: 'Error getting friends' });
+  }
+});
+
+// Social Routes
+// Share a workout
+app.post('/api/social/share', authenticateToken, async (req, res) => {
+  try {
+    const { user_id, workout_id, caption, visibility } = req.body;
+    
+    if (!user_id || !workout_id) {
+      return res.status(400).json({ message: 'User ID and workout ID are required' });
+    }
+    
+    // Check if workout exists
+    const workout = await WorkoutHistory.findById(workout_id);
+    if (!workout) {
+      return res.status(404).json({ message: 'Workout not found' });
+    }
+    
+    // Create shared workout
+    const sharedWorkout = new SharedWorkout({
+      user_id,
+      workout_id,
+      caption,
+      visibility: visibility || 'friends'
+    });
+    
+    await sharedWorkout.save();
+    
+    res.status(201).json({ 
+      message: 'Workout shared successfully',
+      id: sharedWorkout._id
+    });
+  } catch (error) {
+    console.error('Error sharing workout:', error);
+    res.status(500).json({ message: 'Error sharing workout' });
+  }
+});
+
+// Get social feed
+app.get('/api/social/feed/:userId', authenticateToken, async (req, res) => {
+  try {
   const userId = req.params.userId;
   
-  // For now, return a mock social feed
-  const mockFeed = [
-    {
-      id: 1,
-      user_id: 2,
-      user_name: 'John Doe',
-      content: 'Just completed an amazing chest workout! 💪',
-      likes: 15,
-      comments: 3,
-      timestamp: new Date().toISOString(),
-      workout_type: 'Chest',
-      duration: 45,
-      calories_burned: 320
-    },
-    {
-      id: 2,
-      user_id: 3,
-      user_name: 'Sarah Smith',
-      content: 'New personal best on deadlifts today! 🏋️‍♀️',
-      likes: 23,
-      comments: 7,
-      timestamp: new Date(Date.now() - 3600000).toISOString(),
-      workout_type: 'Back',
-      duration: 60,
-      calories_burned: 450
-    },
-    {
-      id: 3,
-      user_id: 4,
-      user_name: 'Mike Johnson',
-      content: 'Leg day is the best day! 🔥',
-      likes: 18,
-      comments: 5,
-      timestamp: new Date(Date.now() - 7200000).toISOString(),
-      workout_type: 'Legs',
-      duration: 55,
-      calories_burned: 380
+    // Get user's friends
+    const friends = await Friend.getFriends(userId);
+    const friendIds = friends.map(friend => friend.id);
+    
+    // Get shared workouts from friends and public workouts
+    const sharedWorkouts = await SharedWorkout.find({
+      $or: [
+        { user_id: { $in: friendIds } },
+        { visibility: 'public' }
+      ]
+    })
+    .populate('user_id', 'name email')
+    .populate('workout_id')
+    .sort({ created_at: -1 })
+    .limit(50);
+    
+    // Format feed items
+    const feed = await Promise.all(sharedWorkouts.map(async (shared) => {
+      const workout = shared.workout_id;
+      const user = shared.user_id;
+      
+      // Check if current user has liked this post
+      const hasLiked = await WorkoutLike.hasLiked(userId, shared._id);
+      
+      return {
+        id: shared._id,
+        user_id: user._id,
+        user_name: user.name,
+        caption: shared.caption,
+        workout_type: workout.workout_type,
+        duration: workout.duration,
+        calories_burned: workout.calories_burned,
+        likes_count: shared.likes_count,
+        comments_count: shared.comments_count,
+        user_liked: hasLiked,
+        created_at: shared.created_at
+      };
+    }));
+    
+    res.json(feed);
+  } catch (error) {
+    console.error('Error getting social feed:', error);
+    res.status(500).json({ message: 'Error getting social feed' });
+  }
+});
+
+// Like a workout
+app.post('/api/social/like', authenticateToken, async (req, res) => {
+  try {
+    const { user_id, shared_workout_id } = req.body;
+    
+    if (!user_id || !shared_workout_id) {
+      return res.status(400).json({ message: 'User ID and shared workout ID are required' });
     }
-  ];
-  
-  res.json(mockFeed);
+    
+    // Check if already liked
+    const existingLike = await WorkoutLike.findOne({ user_id, shared_workout_id });
+    if (existingLike) {
+      return res.status(400).json({ message: 'Already liked this workout' });
+    }
+    
+    // Create like
+    const like = new WorkoutLike({ user_id, shared_workout_id });
+    await like.save();
+    
+    // Update like count
+    await SharedWorkout.findByIdAndUpdate(shared_workout_id, {
+      $inc: { likes_count: 1 }
+    });
+    
+    res.json({ message: 'Workout liked successfully' });
+  } catch (error) {
+    console.error('Error liking workout:', error);
+    res.status(500).json({ message: 'Error liking workout' });
+  }
+});
+
+// Unlike a workout
+app.delete('/api/social/like', authenticateToken, async (req, res) => {
+  try {
+    const { user_id, shared_workout_id } = req.body;
+    
+    if (!user_id || !shared_workout_id) {
+      return res.status(400).json({ message: 'User ID and shared workout ID are required' });
+    }
+    
+    // Remove like
+    const deletedLike = await WorkoutLike.findOneAndDelete({ user_id, shared_workout_id });
+    if (!deletedLike) {
+      return res.status(400).json({ message: 'Like not found' });
+    }
+    
+    // Update like count
+    await SharedWorkout.findByIdAndUpdate(shared_workout_id, {
+      $inc: { likes_count: -1 }
+    });
+    
+    res.json({ message: 'Like removed successfully' });
+  } catch (error) {
+    console.error('Error removing like:', error);
+    res.status(500).json({ message: 'Error removing like' });
+  }
+});
+
+// Comment on a workout
+app.post('/api/social/comment', authenticateToken, async (req, res) => {
+  try {
+    const { user_id, shared_workout_id, comment } = req.body;
+    
+    if (!user_id || !shared_workout_id || !comment) {
+      return res.status(400).json({ message: 'User ID, shared workout ID, and comment are required' });
+    }
+    
+    // Create comment
+    const workoutComment = new WorkoutComment({
+      user_id,
+      shared_workout_id,
+      comment
+    });
+    
+    await workoutComment.save();
+    
+    // Update comment count
+    await SharedWorkout.findByIdAndUpdate(shared_workout_id, {
+      $inc: { comments_count: 1 }
+    });
+    
+    res.status(201).json({ message: 'Comment added successfully' });
+  } catch (error) {
+    console.error('Error adding comment:', error);
+    res.status(500).json({ message: 'Error adding comment' });
+  }
+});
+
+// Get comments for a workout
+app.get('/api/social/comments/:sharedWorkoutId', authenticateToken, async (req, res) => {
+  try {
+    const { sharedWorkoutId } = req.params;
+    const comments = await WorkoutComment.getCommentsForWorkout(sharedWorkoutId);
+    res.json(comments);
+  } catch (error) {
+    console.error('Error getting comments:', error);
+    res.status(500).json({ message: 'Error getting comments' });
+  }
 });
 
 // Update user statistics (insert or update)

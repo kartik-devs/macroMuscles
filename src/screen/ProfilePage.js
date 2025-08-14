@@ -26,9 +26,12 @@ import {
 import { getCurrentUserId } from '../api/auth';
 import { getProfilePicture, getUserLevel, getUserBadges } from '../api/profileEnhancements';
 import ProfilePictureUpload from './ProfilePictureUpload';
+import { useNavigation } from '@react-navigation/native';
 
-export default function ProfilePage() {
+export default function ProfilePage({ route }) {
+  const navigation = useNavigation();
   const [userId, setUserId] = useState(null);
+  const [isViewingFriend, setIsViewingFriend] = useState(false);
   const [loading, setLoading] = useState(true);
   const [userProfile, setUserProfile] = useState({
     display_name: 'User',
@@ -45,6 +48,10 @@ export default function ProfilePage() {
   const [profilePictureModalVisible, setProfilePictureModalVisible] = useState(false);
   const [profilePicture, setProfilePicture] = useState(null);
   const [userLevel, setUserLevel] = useState({ level: 1, experience_points: 0 });
+  const [bodyMeasurements, setBodyMeasurements] = useState({ weight: null, body_fat_percentage: null });
+  const [weeklyProgress, setWeeklyProgress] = useState({ workout_progress: 0, current_streak: 0, weekly_workouts: 0 });
+  const [recentActivity, setRecentActivity] = useState([]);
+  const [weeklyCalendar, setWeeklyCalendar] = useState([]);
   const [userBadges, setUserBadges] = useState([]);
   const [editForm, setEditForm] = useState({
     display_name: '',
@@ -81,6 +88,18 @@ export default function ProfilePage() {
           // Load achievements
           const ach = await getAchievements(id);
           setAchievements(ach);
+          
+          // Load body measurements (placeholder for now)
+          setBodyMeasurements({ weight: null, body_fat_percentage: null });
+          
+          // Load weekly progress (placeholder for now)
+          setWeeklyProgress({ workout_progress: 0, current_streak: 0, weekly_workouts: 0 });
+          
+          // Load recent activity (placeholder for now)
+          setRecentActivity([]);
+          
+          // Load weekly calendar (placeholder for now)
+          setWeeklyCalendar([]);
           
           // Load profile picture
           try {
@@ -225,62 +244,181 @@ export default function ProfilePage() {
         <View style={styles.quickActions}>
           <TouchableOpacity 
             style={styles.quickAction}
-            onPress={() => navigation.navigate('FriendsScreen')}
+            onPress={() => Alert.alert('Friends', 'Friends feature coming soon!')}
           >
             <Ionicons name="people" size={24} color="#0097e6" />
             <Text style={styles.quickActionText}>Friends</Text>
           </TouchableOpacity>
           <TouchableOpacity 
             style={styles.quickAction}
-            onPress={() => navigation.navigate('GamificationScreen')}
+            onPress={() => navigation.navigate('AchievementsPage')}
           >
             <Ionicons name="trophy" size={24} color="#f39c12" />
             <Text style={styles.quickActionText}>Achievements</Text>
           </TouchableOpacity>
           <TouchableOpacity 
             style={styles.quickAction}
-            onPress={() => navigation.navigate('SettingsScreen')}
+            onPress={() => navigation.navigate('SettingsPage')}
           >
             <Ionicons name="settings" size={24} color="#666" />
             <Text style={styles.quickActionText}>Settings</Text>
           </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.quickAction}
+            onPress={() => Alert.alert('Share Profile', `Check out my fitness journey! Level ${userLevel.level} with ${userStats.total_workouts} workouts completed!`)}
+          >
+            <Ionicons name="share-social" size={24} color="#44bd32" />
+            <Text style={styles.quickActionText}>Share</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Progress Overview */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Weekly Progress</Text>
+            <TouchableOpacity onPress={() => Alert.alert('Progress Details', `Weekly Goal: ${weeklyProgress.weekly_workouts}/${weeklyProgress.weekly_goal || 5} workouts\nCurrent Streak: ${weeklyProgress.current_streak} days`)}>
+              <Text style={styles.viewAllText}>View Details</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.progressOverview}>
+            <View style={styles.progressItem}>
+              <View style={styles.progressCircle}>
+                <Text style={styles.progressValue}>{weeklyProgress.workout_progress}%</Text>
+              </View>
+              <Text style={styles.progressLabel}>Workout Goal</Text>
+            </View>
+            <View style={styles.progressItem}>
+              <View style={[styles.progressCircle, { backgroundColor: '#f39c12' }]}>
+                <Text style={styles.progressValue}>{weeklyProgress.current_streak}</Text>
+              </View>
+              <Text style={styles.progressLabel}>Day Streak</Text>
+            </View>
+            <View style={styles.progressItem}>
+              <View style={[styles.progressCircle, { backgroundColor: '#44bd32' }]}>
+                <Text style={styles.progressValue}>{weeklyProgress.weekly_workouts}</Text>
+              </View>
+              <Text style={styles.progressLabel}>This Week</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Body Measurements */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Body Measurements</Text>
+            <TouchableOpacity onPress={() => navigation.navigate('BodyMeasurementsScreen')}>
+              <Ionicons name="add" size={24} color="#0097e6" />
+            </TouchableOpacity>
+          </View>
+          <View style={styles.measurementGrid}>
+            <View style={styles.measurementCard}>
+              <Text style={styles.measurementValue}>{bodyMeasurements.weight || '--'}</Text>
+              <Text style={styles.measurementUnit}>kg</Text>
+              <Text style={styles.measurementLabel}>Weight</Text>
+              <Text style={styles.measurementChange}>{bodyMeasurements.weight ? 'Track progress' : 'Add measurement'}</Text>
+            </View>
+            <View style={styles.measurementCard}>
+              <Text style={styles.measurementValue}>{bodyMeasurements.body_fat_percentage || '--'}</Text>
+              <Text style={styles.measurementUnit}>%</Text>
+              <Text style={styles.measurementLabel}>Body Fat</Text>
+              <Text style={styles.measurementChange}>{bodyMeasurements.body_fat_percentage ? 'Track progress' : 'Add measurement'}</Text>
+            </View>
+          </View>
         </View>
 
         {/* User Statistics Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Statistics</Text>
+            <Text style={styles.sectionTitle}>All-Time Stats</Text>
+            <TouchableOpacity onPress={() => Alert.alert('Analytics', `Total Stats:\n• ${userStats.total_workouts} workouts\n• ${userStats.total_calories_burned} calories burned\n• ${formatTime(userStats.total_workout_time)} total time\n• Level ${userLevel.level} (${userLevel.experience_points} XP)`)}>
+              <Text style={styles.viewAllText}>Analytics</Text>
+            </TouchableOpacity>
           </View>
           
           <View style={styles.statsContainer}>
             <View style={styles.statItem}>
               <Text style={styles.statValue}>{userStats.total_workouts}</Text>
               <Text style={styles.statLabel}>Workouts</Text>
+              <View style={styles.statTrend}>
+                <Ionicons name="trending-up" size={12} color="#44bd32" />
+                <Text style={styles.statTrendText}>+12%</Text>
+              </View>
             </View>
             
             <View style={styles.statItem}>
               <Text style={styles.statValue}>{userStats.total_calories_burned}</Text>
               <Text style={styles.statLabel}>Calories</Text>
+              <View style={styles.statTrend}>
+                <Ionicons name="trending-up" size={12} color="#44bd32" />
+                <Text style={styles.statTrendText}>+8%</Text>
+              </View>
             </View>
             
             <View style={styles.statItem}>
               <Text style={styles.statValue}>{formatTime(userStats.total_workout_time)}</Text>
               <Text style={styles.statLabel}>Time</Text>
+              <View style={styles.statTrend}>
+                <Ionicons name="trending-up" size={12} color="#44bd32" />
+                <Text style={styles.statTrendText}>+15%</Text>
+              </View>
             </View>
             
             <View style={styles.statItem}>
               <Text style={styles.statValue}>{userLevel.experience_points}</Text>
               <Text style={styles.statLabel}>XP</Text>
+              <View style={styles.statTrend}>
+                <Ionicons name="star" size={12} color="#f39c12" />
+                <Text style={styles.statTrendText}>Lvl {userLevel.level}</Text>
+              </View>
             </View>
           </View>
         </View>
         
+        {/* Recent Activity */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Recent Activity</Text>
+            <TouchableOpacity onPress={() => Alert.alert('Recent Activity', `You have ${recentActivity.length} recent activities. Check your workout history for more details!`)}>
+              <Text style={styles.viewAllText}>View All</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.activityList}>
+            {recentActivity.length === 0 ? (
+              <Text style={styles.noDataText}>No recent activity. Start working out to see your progress!</Text>
+            ) : (
+              recentActivity.slice(0, 3).map((activity, index) => (
+                <View key={index} style={styles.activityItem}>
+                  <View style={[styles.activityIcon, { 
+                    backgroundColor: activity.type === 'workout' ? '#E53935' : 
+                                   activity.type === 'achievement' ? '#f39c12' : '#44bd32' 
+                  }]}>
+                    <Ionicons name={activity.icon || 'fitness'} size={16} color="#fff" />
+                  </View>
+                  <View style={styles.activityInfo}>
+                    <Text style={styles.activityTitle}>{activity.title}</Text>
+                    <Text style={styles.activityTime}>
+                      {new Date(activity.time).toLocaleDateString()}
+                      {activity.duration && ` • ${activity.duration} min`}
+                    </Text>
+                  </View>
+                  {activity.calories && (
+                    <Text style={styles.activityCalories}>{activity.calories} cal</Text>
+                  )}
+                  {activity.weight && (
+                    <Text style={styles.activityCalories}>{activity.weight} kg</Text>
+                  )}
+                </View>
+              ))
+            )}
+          </View>
+        </View>
+
         {/* Recent Badges */}
         {userBadges.length > 0 && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Recent Badges</Text>
-              <TouchableOpacity onPress={() => navigation.navigate('GamificationScreen')}>
+              <TouchableOpacity onPress={() => Alert.alert('Badges', `You have earned ${userBadges.length} badges! Keep working out to unlock more.`)}>
                 <Text style={styles.viewAllText}>View All</Text>
               </TouchableOpacity>
             </View>
@@ -296,6 +434,41 @@ export default function ProfilePage() {
             </ScrollView>
           </View>
         )}
+
+        {/* Workout Calendar Preview */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>This Week</Text>
+            <TouchableOpacity onPress={() => Alert.alert('Calendar', 'Full calendar view coming soon!')}>
+              <Text style={styles.viewAllText}>Full Calendar</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.weekCalendar}>
+            {weeklyCalendar.length > 0 ? weeklyCalendar.map((day, index) => (
+              <View key={index} style={styles.dayItem}>
+                <Text style={styles.dayLabel}>{day.day}</Text>
+                <View style={[
+                  styles.dayCircle, 
+                  day.hasWorkout && styles.completedDay,
+                  day.isToday && styles.todayDay
+                ]}>
+                  {day.hasWorkout && <Ionicons name="checkmark" size={12} color="#fff" />}
+                  {day.isToday && !day.hasWorkout && <Text style={styles.todayText}>•</Text>}
+                  {day.workoutCount > 1 && <Text style={styles.workoutCount}>{day.workoutCount}</Text>}
+                </View>
+              </View>
+            )) : (
+              ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, index) => (
+                <View key={index} style={styles.dayItem}>
+                  <Text style={styles.dayLabel}>{day}</Text>
+                  <View style={styles.dayCircle}>
+                    <Text style={styles.todayText}>•</Text>
+                  </View>
+                </View>
+              ))
+            )}
+          </View>
+        </View>
         
         {/* Achievements Section */}
         <View style={styles.section}>
@@ -337,16 +510,25 @@ export default function ProfilePage() {
                 
                 <View style={styles.actionButtons}>
                   <Text style={styles.divider}>|</Text>
-                  <TouchableOpacity onPress={() => Alert.alert('Update', 'Enter new weight for this exercise', [
-                    { text: 'Cancel', style: 'cancel' },
-                    { 
-                      text: 'Update', 
-                      onPress: () => {
-                        // In a real app, you'd show a modal to input new weight
-                        Alert.alert('Feature', 'This feature will be implemented soon!');
-                      }
-                    }
-                  ])}>
+                  <TouchableOpacity onPress={() => {
+                    Alert.prompt(
+                      'Update Personal Best',
+                      `Enter new weight for ${best.exercise_name}:`,
+                      [
+                        { text: 'Cancel', style: 'cancel' },
+                        { 
+                          text: 'Update', 
+                          onPress: (weight) => {
+                            if (weight && !isNaN(weight)) {
+                              handleAddPersonalBest(best.exercise_name, parseFloat(weight));
+                            }
+                          }
+                        }
+                      ],
+                      'plain-text',
+                      best.weight.toString()
+                    );
+                  }}>
                     <Ionicons name="add" size={24} color="black" />
                   </TouchableOpacity>
                 </View>
@@ -354,7 +536,10 @@ export default function ProfilePage() {
             ))
           )}
           
-          <TouchableOpacity style={styles.viewMoreButton}>
+          <TouchableOpacity 
+            style={styles.viewMoreButton}
+            onPress={() => Alert.alert('Personal Bests', `You have ${personalBests.length} personal records. Keep pushing your limits!`)}
+          >
             <Text style={styles.viewMoreText}>View More</Text>
           </TouchableOpacity>
         </View>
@@ -529,6 +714,149 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#666',
     marginTop: 5,
+  },
+  progressOverview: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingHorizontal: 15,
+  },
+  progressItem: {
+    alignItems: 'center',
+  },
+  progressCircle: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#0097e6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  progressValue: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  progressLabel: {
+    fontSize: 12,
+    color: '#666',
+    textAlign: 'center',
+  },
+  measurementGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 15,
+  },
+  measurementCard: {
+    backgroundColor: '#f8f9fa',
+    borderRadius: 12,
+    padding: 15,
+    alignItems: 'center',
+    width: '48%',
+  },
+  measurementValue: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  measurementUnit: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: -5,
+  },
+  measurementLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginTop: 5,
+    color: '#333',
+  },
+  measurementChange: {
+    fontSize: 11,
+    color: '#44bd32',
+    marginTop: 2,
+  },
+  statTrend: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 2,
+  },
+  statTrendText: {
+    fontSize: 10,
+    color: '#44bd32',
+    marginLeft: 2,
+  },
+  activityList: {
+    paddingHorizontal: 15,
+  },
+  activityItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  activityIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  activityInfo: {
+    flex: 1,
+  },
+  activityTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+  },
+  activityTime: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 2,
+  },
+  activityCalories: {
+    fontSize: 12,
+    color: '#0097e6',
+    fontWeight: '600',
+  },
+  weekCalendar: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingHorizontal: 15,
+  },
+  dayItem: {
+    alignItems: 'center',
+  },
+  dayLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 8,
+  },
+  dayCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#f0f0f0',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  completedDay: {
+    backgroundColor: '#44bd32',
+  },
+  todayDay: {
+    backgroundColor: '#0097e6',
+  },
+  todayText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  workoutCount: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
   badgeItem: {
     alignItems: 'center',

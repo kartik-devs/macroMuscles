@@ -6,10 +6,10 @@ import {
   TouchableOpacity,
   FlatList,
   StyleSheet,
-  ActivityIndicator,
   Alert,
   SafeAreaView,
   StatusBar,
+  ActivityIndicator
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { shareWorkout } from '../../api/social';
@@ -19,10 +19,10 @@ import { getCurrentUserId } from '../../api/auth';
 export default function ShareWorkout({ navigation }) {
   const [userId, setUserId] = useState(null);
   const [workouts, setWorkouts] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [selectedWorkout, setSelectedWorkout] = useState(null);
   const [caption, setCaption] = useState('');
-  const [visibility, setVisibility] = useState('friends'); // 'public', 'friends', 'private'
+  const [visibility, setVisibility] = useState('friends');
+  const [loading, setLoading] = useState(true);
   const [sharing, setSharing] = useState(false);
 
   useEffect(() => {
@@ -34,26 +34,22 @@ export default function ShareWorkout({ navigation }) {
       const id = await getCurrentUserId();
       setUserId(id);
       if (id) {
-        loadWorkouts(id);
+        await loadWorkouts(id);
       }
     } catch (error) {
       console.error('Error loading user data:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
   const loadWorkouts = async (id) => {
     try {
-      const workoutHistory = await getWorkoutHistory(id);
-      // Sort by most recent first
-      const sortedWorkouts = workoutHistory.sort((a, b) => 
-        new Date(b.completed_at) - new Date(a.completed_at)
-      );
-      setWorkouts(sortedWorkouts);
+      const workoutData = await getWorkoutHistory(id);
+      setWorkouts(Array.isArray(workoutData) ? workoutData : []);
     } catch (error) {
       console.error('Error loading workouts:', error);
       Alert.alert('Error', 'Failed to load workout history');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -63,14 +59,18 @@ export default function ShareWorkout({ navigation }) {
       return;
     }
 
+    if (!caption.trim()) {
+      Alert.alert('Error', 'Please add a caption for your post');
+      return;
+    }
+
     try {
       setSharing(true);
-      await shareWorkout(userId, selectedWorkout.id, caption, visibility);
-      Alert.alert(
-        'Success',
-        'Workout shared successfully',
-        [{ text: 'OK', onPress: () => navigation.goBack() }]
-      );
+      await shareWorkout(userId, selectedWorkout.id, caption.trim(), visibility);
+      
+      Alert.alert('Success', 'Workout shared successfully!', [
+        { text: 'OK', onPress: () => navigation.goBack() }
+      ]);
     } catch (error) {
       console.error('Error sharing workout:', error);
       Alert.alert('Error', error.message || 'Failed to share workout');
@@ -84,38 +84,57 @@ export default function ShareWorkout({ navigation }) {
     const formattedDate = new Date(item.completed_at).toLocaleDateString();
     
     return (
-      <TouchableOpacity 
-        style={[
-          styles.workoutCard,
-          isSelected && styles.selectedWorkout
-        ]}
+      <TouchableOpacity
+        style={[styles.workoutCard, isSelected && styles.selectedWorkout]}
         onPress={() => setSelectedWorkout(item)}
       >
-        <View style={styles.workoutInfo}>
+        <View style={styles.workoutHeader}>
           <Text style={styles.workoutType}>{item.workout_type}</Text>
           <Text style={styles.workoutDate}>{formattedDate}</Text>
-          
-          <View style={styles.workoutStats}>
-            <View style={styles.statItem}>
-              <Ionicons name="time-outline" size={16} color="#666" />
-              <Text style={styles.statText}>{item.duration} min</Text>
-            </View>
-            
-            <View style={styles.statItem}>
-              <Ionicons name="flame-outline" size={16} color="#666" />
-              <Text style={styles.statText}>{item.calories_burned || 0} cal</Text>
-            </View>
+        </View>
+        
+        <View style={styles.workoutStats}>
+          <View style={styles.statItem}>
+            <Ionicons name="time-outline" size={16} color="#666" />
+            <Text style={styles.statText}>{item.duration} min</Text>
+          </View>
+          <View style={styles.statItem}>
+            <Ionicons name="flame-outline" size={16} color="#666" />
+            <Text style={styles.statText}>{item.calories_burned} cal</Text>
           </View>
         </View>
         
         {isSelected && (
-          <View style={styles.checkmark}>
-            <Ionicons name="checkmark-circle" size={24} color="#E53935" />
+          <View style={styles.selectedIndicator}>
+            <Ionicons name="checkmark-circle" size={20} color="#44bd32" />
+            <Text style={styles.selectedText}>Selected</Text>
           </View>
         )}
       </TouchableOpacity>
     );
   };
+
+  const renderVisibilityOption = (option, label, icon) => (
+    <TouchableOpacity
+      style={[
+        styles.visibilityOption,
+        visibility === option && styles.selectedVisibility
+      ]}
+      onPress={() => setVisibility(option)}
+    >
+      <Ionicons 
+        name={icon} 
+        size={20} 
+        color={visibility === option ? '#fff' : '#666'} 
+      />
+      <Text style={[
+        styles.visibilityText,
+        visibility === option && styles.selectedVisibilityText
+      ]}>
+        {label}
+      </Text>
+    </TouchableOpacity>
+  );
 
   if (loading) {
     return (
@@ -127,121 +146,80 @@ export default function ShareWorkout({ navigation }) {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges = {['top', 'left', 'right']}>
+    <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+      
       <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
+        <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Share Workout</Text>
-        <TouchableOpacity 
-          style={[
-            styles.shareButton,
-            (!selectedWorkout || sharing) && styles.disabledButton
-          ]}
-          onPress={handleShare}
-          disabled={!selectedWorkout || sharing}
-        >
-          {sharing ? (
-            <ActivityIndicator size="small" color="#fff" />
-          ) : (
-            <Text style={styles.shareButtonText}>Share</Text>
-          )}
-        </TouchableOpacity>
+        <View style={{ width: 24 }} />
       </View>
-      
-      <View style={styles.captionContainer}>
-        <TextInput
-          style={styles.captionInput}
-          placeholder="Write a caption..."
-          value={caption}
-          onChangeText={setCaption}
-          multiline
-          maxLength={255}
-        />
-      </View>
-      
-      <View style={styles.visibilityContainer}>
-        <Text style={styles.visibilityLabel}>Who can see this?</Text>
+
+      <View style={styles.content}>
+        <Text style={styles.sectionTitle}>Select a Workout</Text>
         
-        <View style={styles.visibilityOptions}>
-          <TouchableOpacity 
-            style={[
-              styles.visibilityOption,
-              visibility === 'public' && styles.selectedVisibility
-            ]}
-            onPress={() => setVisibility('public')}
-          >
-            <Ionicons 
-              name="globe-outline" 
-              size={20} 
-              color={visibility === 'public' ? "#E53935" : "#666"} 
-            />
-            <Text style={[
-              styles.visibilityText,
-              visibility === 'public' && styles.selectedVisibilityText
-            ]}>Public</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={[
-              styles.visibilityOption,
-              visibility === 'friends' && styles.selectedVisibility
-            ]}
-            onPress={() => setVisibility('friends')}
-          >
-            <Ionicons 
-              name="people-outline" 
-              size={20} 
-              color={visibility === 'friends' ? "#E53935" : "#666"} 
-            />
-            <Text style={[
-              styles.visibilityText,
-              visibility === 'friends' && styles.selectedVisibilityText
-            ]}>Friends</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={[
-              styles.visibilityOption,
-              visibility === 'private' && styles.selectedVisibility
-            ]}
-            onPress={() => setVisibility('private')}
-          >
-            <Ionicons 
-              name="lock-closed-outline" 
-              size={20} 
-              color={visibility === 'private' ? "#E53935" : "#666"} 
-            />
-            <Text style={[
-              styles.visibilityText,
-              visibility === 'private' && styles.selectedVisibilityText
-            ]}>Only Me</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-      
-      <Text style={styles.sectionTitle}>Select a workout to share</Text>
-      
-      {workouts.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Ionicons name="barbell-outline" size={64} color="#ccc" />
-          <Text style={styles.emptyText}>No workouts to share</Text>
-          <Text style={styles.emptySubtext}>
-            Complete a workout first to share it with others
-          </Text>
-        </View>
-      ) : (
         <FlatList
           data={workouts}
           renderItem={renderWorkoutItem}
           keyExtractor={item => item.id.toString()}
           contentContainerStyle={styles.workoutList}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Ionicons name="fitness-outline" size={64} color="#ccc" />
+              <Text style={styles.emptyText}>No workouts to share</Text>
+              <Text style={styles.emptySubtext}>
+                Complete some workouts first to share them
+              </Text>
+            </View>
+          }
         />
-      )}
+
+        {selectedWorkout && (
+          <>
+            <Text style={styles.sectionTitle}>Caption</Text>
+            <TextInput
+              style={styles.captionInput}
+              placeholder="What's on your mind about this workout?"
+              placeholderTextColor="#999"
+              value={caption}
+              onChangeText={setCaption}
+              multiline
+              maxLength={500}
+            />
+            <Text style={styles.characterCount}>
+              {caption.length}/500
+            </Text>
+
+            <Text style={styles.sectionTitle}>Visibility</Text>
+            <View style={styles.visibilityContainer}>
+              {renderVisibilityOption('friends', 'Friends Only', 'people-outline')}
+              {renderVisibilityOption('public', 'Public', 'globe-outline')}
+              {renderVisibilityOption('private', 'Private', 'lock-closed-outline')}
+            </View>
+
+            <TouchableOpacity
+              style={[
+                styles.shareButton,
+                (!selectedWorkout || !caption.trim() || sharing) && styles.shareButtonDisabled
+              ]}
+              onPress={handleShare}
+              disabled={!selectedWorkout || !caption.trim() || sharing}
+            >
+              {sharing ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <>
+                  <Ionicons name="share-social" size={20} color="#fff" />
+                  <Text style={styles.shareButtonText}>Share Workout</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </>
+        )}
+      </View>
     </SafeAreaView>
   );
 }
@@ -249,127 +227,53 @@ export default function ShareWorkout({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#f8f9fa',
-  },
-  loadingText: {
-    marginTop: 10,
-    fontSize: 16,
-    color: '#666',
+    backgroundColor: '#fff',
   },
   header: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#fff',
+    alignItems: 'center',
     paddingHorizontal: 15,
     paddingVertical: 15,
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
-  },
-  backButton: {
-    padding: 5,
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#333',
   },
-  shareButton: {
-    backgroundColor: '#E53935',
-    paddingVertical: 8,
-    paddingHorizontal: 15,
-    borderRadius: 5,
-  },
-  disabledButton: {
-    backgroundColor: '#ccc',
-  },
-  shareButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-  },
-  captionContainer: {
-    backgroundColor: '#fff',
-    padding: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  captionInput: {
-    height: 80,
-    textAlignVertical: 'top',
-    fontSize: 16,
-  },
-  visibilityContainer: {
-    backgroundColor: '#fff',
-    padding: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  visibilityLabel: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 10,
-  },
-  visibilityOptions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  visibilityOption: {
+  content: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 10,
-    borderRadius: 5,
-  },
-  selectedVisibility: {
-    backgroundColor: 'rgba(0, 151, 230, 0.1)',
-  },
-  visibilityText: {
-    marginLeft: 5,
-    fontSize: 14,
-    color: '#666',
-  },
-  selectedVisibilityText: {
-    color: '#E53935',
-    fontWeight: 'bold',
+    padding: 15,
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: 'bold',
     color: '#333',
-    margin: 15,
+    marginBottom: 10,
+    marginTop: 20,
   },
   workoutList: {
-    paddingHorizontal: 15,
     paddingBottom: 20,
   },
   workoutCard: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: '#f8f9fa',
     borderRadius: 12,
     padding: 15,
     marginBottom: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    borderWidth: 2,
+    borderColor: 'transparent',
   },
   selectedWorkout: {
-    borderWidth: 2,
     borderColor: '#E53935',
+    backgroundColor: '#fff5f5',
   },
-  workoutInfo: {
-    flex: 1,
+  workoutHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
   },
   workoutType: {
     fontSize: 16,
@@ -379,12 +283,9 @@ const styles = StyleSheet.create({
   workoutDate: {
     fontSize: 14,
     color: '#666',
-    marginTop: 2,
-    marginBottom: 5,
   },
   workoutStats: {
     flexDirection: 'row',
-    marginTop: 5,
   },
   statItem: {
     flexDirection: 'row',
@@ -396,13 +297,94 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
   },
-  checkmark: {
-    marginLeft: 10,
+  selectedIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 10,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
   },
-  emptyContainer: {
+  selectedText: {
+    marginLeft: 5,
+    fontSize: 14,
+    color: '#44bd32',
+    fontWeight: 'bold',
+  },
+  captionInput: {
+    backgroundColor: '#f8f9fa',
+    borderRadius: 12,
+    padding: 15,
+    fontSize: 16,
+    minHeight: 100,
+    textAlignVertical: 'top',
+  },
+  characterCount: {
+    textAlign: 'right',
+    fontSize: 12,
+    color: '#999',
+    marginTop: 5,
+  },
+  visibilityContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  visibilityOption: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f8f9fa',
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    marginHorizontal: 5,
+  },
+  selectedVisibility: {
+    backgroundColor: '#E53935',
+  },
+  visibilityText: {
+    marginLeft: 5,
+    fontSize: 14,
+    color: '#666',
+  },
+  selectedVisibilityText: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  shareButton: {
+    backgroundColor: '#E53935',
+    borderRadius: 12,
+    paddingVertical: 15,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 30,
+  },
+  shareButtonDisabled: {
+    backgroundColor: '#ccc',
+  },
+  shareButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginLeft: 8,
+  },
+  loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#fff',
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#666',
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
     padding: 30,
   },
   emptyText: {
