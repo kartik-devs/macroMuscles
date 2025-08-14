@@ -74,6 +74,46 @@ export const getAchievements = async (userId) => {
   }
 };
 
+// Get all achievements with progress
+export const getAllAchievements = async (userId) => {
+  try {
+    const headers = await getAuthHeaders();
+    const response = await axios.get(`${API_URL}/achievements/all/${userId}`, { headers });
+    return response.data;
+  } catch (error) {
+    throw error.response ? error.response.data : { message: 'Network error' };
+  }
+};
+
+// Track achievement progress
+export const trackAchievement = async (userId, achievementType, data) => {
+  try {
+    const headers = await getAuthHeaders();
+    const response = await axios.post(`${API_URL}/achievements/track`, {
+      user_id: userId,
+      achievement_type: achievementType,
+      ...data
+    }, { headers });
+    return response.data;
+  } catch (error) {
+    throw error.response ? error.response.data : { message: 'Network error' };
+  }
+};
+
+// Track diet
+export const trackDiet = async (userId, dietType) => {
+  try {
+    const headers = await getAuthHeaders();
+    const response = await axios.post(`${API_URL}/diet/track`, {
+      user_id: userId,
+      diet_type: dietType
+    }, { headers });
+    return response.data;
+  } catch (error) {
+    throw error.response ? error.response.data : { message: 'Network error' };
+  }
+};
+
 // Get user statistics
 export const getUserStatistics = async (userId) => {
   try {

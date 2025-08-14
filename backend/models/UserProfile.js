@@ -47,6 +47,10 @@ const userProfileSchema = new mongoose.Schema({
   },
   last_measurement_date: {
     type: Date
+  },
+  tried_diets: {
+    type: [String],
+    default: []
   }
 }, {
   timestamps: true

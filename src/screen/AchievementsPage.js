@@ -11,12 +11,24 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { getCurrentUserId } from '../api/auth';
 import { getUserBadges, getUserLevel } from '../api/profileEnhancements';
-import { getAchievements, getUserStatistics } from '../api/profile';
+import { getAchievements, getAllAchievements, getUserStatistics } from '../api/profile';
 
 export default function AchievementsPage({ navigation }) {
   const [userId, setUserId] = useState(null);
+  
+  const getLevelColor = (level) => {
+    switch(level) {
+      case 'bronze': return '#CD7F32';
+      case 'silver': return '#C0C0C0';
+      case 'gold': return '#FFD700';
+      case 'platinum': return '#E5E4E2';
+      case 'diamond': return '#B9F2FF';
+      default: return '#666';
+    }
+  };
   const [badges, setBadges] = useState([]);
   const [achievements, setAchievements] = useState([]);
+  const [allAchievements, setAllAchievements] = useState([]);
   const [userLevel, setUserLevel] = useState({ level: 1, experience_points: 0 });
   const [stats, setStats] = useState({});
 
@@ -26,15 +38,17 @@ export default function AchievementsPage({ navigation }) {
       setUserId(id);
       
       if (id) {
-        const [badgesData, achievementsData, levelData, statsData] = await Promise.all([
+        const [badgesData, achievementsData, allAchievementsData, levelData, statsData] = await Promise.all([
           getUserBadges(id),
           getAchievements(id),
+          getAllAchievements(id),
           getUserLevel(id),
           getUserStatistics(id)
         ]);
         
         setBadges(badgesData);
         setAchievements(achievementsData);
+        setAllAchievements(allAchievementsData);
         setUserLevel(levelData);
         setStats(statsData);
       }
@@ -68,39 +82,61 @@ export default function AchievementsPage({ navigation }) {
           </Text>
         </View>
 
-        {/* Badges */}
+        {/* All Achievements */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Badges ({badges.length})</Text>
-          <View style={styles.badgesGrid}>
-            {badges.map((badge, index) => (
-              <View key={index} style={styles.badgeCard}>
-                <View style={[styles.badgeIcon, { backgroundColor: badge.color }]}>
-                  <Ionicons name={badge.icon} size={24} color="#fff" />
-                </View>
-                <Text style={styles.badgeName}>{badge.name}</Text>
-                <Text style={styles.badgeDescription}>{badge.description}</Text>
+          <Text style={styles.sectionTitle}>All Achievements</Text>
+          {['workout', 'diet', 'challenge', 'master'].map(type => {
+            const typeAchievements = allAchievements.filter(a => a.achievement_type === type);
+            return (
+              <View key={type} style={styles.achievementCategory}>
+                <Text style={styles.categoryTitle}>
+                  {type.charAt(0).toUpperCase() + type.slice(1)} 
+                  ({typeAchievements.filter(a => a.completed).length}/{typeAchievements.length})
+                </Text>
+                {typeAchievements.map((achievement, index) => (
+                  <View key={index} style={[styles.achievementItem, achievement.completed && styles.completedAchievement]}>
+                    <View style={styles.achievementLeft}>
+                      <Ionicons 
+                        name={achievement.completed ? "checkmark-circle" : "radio-button-off"} 
+                        size={24} 
+                        color={achievement.completed ? "#44bd32" : "#666"} 
+                      />
+                      <View style={styles.achievementText}>
+                        <Text style={[styles.achievementName, { color: achievement.completed ? '#44bd32' : '#fff' }]}>
+                          {achievement.achievement_name}
+                        </Text>
+                        <Text style={styles.achievementDesc}>{achievement.description}</Text>
+                      </View>
+                    </View>
+                    <View style={styles.achievementRight}>
+                      <Text style={styles.progressText}>{achievement.progress}/{achievement.target}</Text>
+                      <View style={[styles.levelBadge, { backgroundColor: getLevelColor(achievement.level) }]}>
+                        <Text style={styles.levelBadgeText}>{achievement.level}</Text>
+                      </View>
+                    </View>
+                  </View>
+                ))}
               </View>
-            ))}
-          </View>
+            );
+          })}
         </View>
 
-        {/* Achievements */}
+        {/* Recent Achievements */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Medals ({achievements.length})</Text>
+          <Text style={styles.sectionTitle}>Recent Achievements ({achievements.length})</Text>
           {achievements.length === 0 ? (
-            <Text style={styles.noDataText}>Complete workouts to earn medals!</Text>
+            <Text style={styles.noDataText}>Complete activities to earn achievements!</Text>
           ) : (
-            achievements.map((achievement, index) => (
-              <View key={index} style={styles.achievementCard}>
+            achievements.slice(0, 5).map((achievement, index) => (
+              <View key={index} style={styles.recentAchievementCard}>
                 <Ionicons 
-                  name="medal" 
+                  name="trophy" 
                   size={32} 
-                  color={achievement.level === 'gold' ? '#FFD700' : 
-                         achievement.level === 'silver' ? '#C0C0C0' : '#CD7F32'} 
+                  color={getLevelColor(achievement.level)} 
                 />
                 <View style={styles.achievementInfo}>
-                  <Text style={styles.achievementTitle}>{achievement.description}</Text>
-                  <Text style={styles.achievementLevel}>{achievement.level} medal</Text>
+                  <Text style={styles.achievementTitle}>{achievement.name}</Text>
+                  <Text style={styles.achievementLevel}>{achievement.level} • {achievement.type}</Text>
                 </View>
               </View>
             ))
@@ -196,35 +232,68 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     justifyContent: 'space-between',
   },
-  badgeCard: {
-    width: '48%',
+  achievementCategory: {
+    marginBottom: 20,
+  },
+  categoryTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#0097e6',
+    marginBottom: 10,
+    textTransform: 'capitalize',
+  },
+  achievementItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: '#3a3a3a',
-    borderRadius: 12,
-    padding: 15,
-    marginBottom: 15,
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 8,
   },
-  badgeIcon: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    justifyContent: 'center',
+  completedAchievement: {
+    backgroundColor: '#2d4a2d',
+    borderLeftWidth: 4,
+    borderLeftColor: '#44bd32',
+  },
+  achievementLeft: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10,
+    flex: 1,
   },
-  badgeName: {
+  achievementText: {
+    marginLeft: 12,
+    flex: 1,
+  },
+  achievementName: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#fff',
-    textAlign: 'center',
-    marginBottom: 5,
   },
-  badgeDescription: {
+  achievementDesc: {
     fontSize: 12,
     color: '#888',
-    textAlign: 'center',
+    marginTop: 2,
   },
-  achievementCard: {
+  achievementRight: {
+    alignItems: 'flex-end',
+  },
+  progressText: {
+    fontSize: 12,
+    color: '#888',
+    marginBottom: 4,
+  },
+  levelBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+  },
+  levelBadgeText: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: '#000',
+    textTransform: 'uppercase',
+  },
+  recentAchievementCard: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#3a3a3a',

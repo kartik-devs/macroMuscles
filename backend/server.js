@@ -14,6 +14,7 @@ const DailyNutrition = require('./models/DailyNutrition');
 const UserGoal = require('./models/UserGoal');
 const PersonalBest = require('./models/PersonalBest');
 const UserStatistics = require('./models/UserStatistics');
+const Achievement = require('./models/Achievement');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key';
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/macromuscles';
@@ -196,6 +197,23 @@ app.post('/api/challenge-progress', async (req, res) => {
       speed: speed || null
     });
     await challengeProgress.save();
+    
+    // Track challenge achievement
+    await initializeAchievements(user_id);
+    const challengeAchievements = await Achievement.find({ 
+      user_id, 
+      achievement_type: 'challenge',
+      completed: false 
+    });
+    
+    for (const achievement of challengeAchievements) {
+      achievement.progress += 1;
+      if (achievement.progress >= achievement.target) {
+        achievement.completed = true;
+        achievement.completed_at = new Date();
+      }
+      await achievement.save();
+    }
     
     res.status(201).json({ 
       message: 'Challenge progress saved successfully',
@@ -471,24 +489,189 @@ app.get('/api/personal-bests/:userId', async (req, res) => {
   }
 });
 
+// Initialize achievements for a user
+const initializeAchievements = async (userId) => {
+  const achievementTemplates = [
+    // Workout achievements
+    { type: 'workout', name: 'First Steps', level: 'bronze', description: 'Complete your first workout', target: 1 },
+    { type: 'workout', name: 'Getting Strong', level: 'silver', description: 'Complete 10 workouts', target: 10 },
+    { type: 'workout', name: 'Fitness Enthusiast', level: 'gold', description: 'Complete 50 workouts', target: 50 },
+    { type: 'workout', name: 'Workout Warrior', level: 'platinum', description: 'Complete 100 workouts', target: 100 },
+    { type: 'workout', name: 'Fitness Legend', level: 'diamond', description: 'Complete 250 workouts', target: 250 },
+    
+    // Diet achievements
+    { type: 'diet', name: 'Nutrition Newbie', level: 'bronze', description: 'Try your first diet plan', target: 1 },
+    { type: 'diet', name: 'Diet Explorer', level: 'silver', description: 'Try 3 different diet plans', target: 3 },
+    { type: 'diet', name: 'Nutrition Expert', level: 'gold', description: 'Try 5 different diet plans', target: 5 },
+    { type: 'diet', name: 'Diet Master', level: 'platinum', description: 'Try 7 different diet plans', target: 7 },
+    { type: 'diet', name: 'Nutrition Guru', level: 'diamond', description: 'Try all 8 diet plans', target: 8 },
+    
+    // Challenge achievements
+    { type: 'challenge', name: 'Challenge Accepted', level: 'bronze', description: 'Complete your first challenge', target: 1 },
+    { type: 'challenge', name: 'Challenge Seeker', level: 'silver', description: 'Complete 5 challenges', target: 5 },
+    { type: 'challenge', name: 'Challenge Champion', level: 'gold', description: 'Complete 10 challenges', target: 10 },
+    { type: 'challenge', name: 'Challenge Elite', level: 'platinum', description: 'Complete 20 challenges', target: 20 },
+    { type: 'challenge', name: 'Challenge Legend', level: 'diamond', description: 'Complete 50 challenges', target: 50 },
+    
+    // Master achievement
+    { type: 'master', name: 'MacroMuscles Master', level: 'diamond', description: 'Complete all workout, diet, and challenge achievements', target: 15 }
+  ];
+  
+  for (const template of achievementTemplates) {
+    await Achievement.findOneAndUpdate(
+      { user_id: userId, achievement_type: template.type, achievement_name: template.name },
+      {
+        user_id: userId,
+        achievement_type: template.type,
+        achievement_name: template.name,
+        level: template.level,
+        description: template.description,
+        target: template.target,
+        progress: 0,
+        completed: false
+      },
+      { upsert: true }
+    );
+  }
+};
+
+// Track achievement progress
+app.post('/api/achievements/track', async (req, res) => {
+  try {
+    const { user_id, achievement_type, workout_type, diet_type, challenge_type } = req.body;
+    
+    // Initialize achievements if not exists
+    await initializeAchievements(user_id);
+    
+    if (achievement_type === 'workout') {
+      const workoutAchievements = await Achievement.find({ 
+        user_id, 
+        achievement_type: 'workout',
+        completed: false 
+      });
+      
+      for (const achievement of workoutAchievements) {
+        achievement.progress += 1;
+        if (achievement.progress >= achievement.target) {
+          achievement.completed = true;
+          achievement.completed_at = new Date();
+        }
+        await achievement.save();
+      }
+    }
+    
+    if (achievement_type === 'diet' && diet_type) {
+      const dietAchievements = await Achievement.find({ 
+        user_id, 
+        achievement_type: 'diet',
+        completed: false 
+      });
+      
+      // Track unique diets tried
+      const userProfile = await UserProfile.findOne({ user_id }) || {};
+      const triedDiets = userProfile.tried_diets || [];
+      if (!triedDiets.includes(diet_type)) {
+        triedDiets.push(diet_type);
+        await UserProfile.findOneAndUpdate(
+          { user_id },
+          { tried_diets: triedDiets },
+          { upsert: true }
+        );
+        
+        for (const achievement of dietAchievements) {
+          achievement.progress = triedDiets.length;
+          if (achievement.progress >= achievement.target) {
+            achievement.completed = true;
+            achievement.completed_at = new Date();
+          }
+          await achievement.save();
+        }
+      }
+    }
+    
+    if (achievement_type === 'challenge') {
+      const challengeAchievements = await Achievement.find({ 
+        user_id, 
+        achievement_type: 'challenge',
+        completed: false 
+      });
+      
+      for (const achievement of challengeAchievements) {
+        achievement.progress += 1;
+        if (achievement.progress >= achievement.target) {
+          achievement.completed = true;
+          achievement.completed_at = new Date();
+        }
+        await achievement.save();
+      }
+    }
+    
+    // Check master achievement
+    const completedAchievements = await Achievement.countDocuments({
+      user_id,
+      achievement_type: { $in: ['workout', 'diet', 'challenge'] },
+      completed: true
+    });
+    
+    const masterAchievement = await Achievement.findOne({
+      user_id,
+      achievement_type: 'master',
+      completed: false
+    });
+    
+    if (masterAchievement && completedAchievements >= 15) {
+      masterAchievement.progress = completedAchievements;
+      masterAchievement.completed = true;
+      masterAchievement.completed_at = new Date();
+      await masterAchievement.save();
+    }
+    
+    res.json({ message: 'Achievement progress tracked' });
+  } catch (error) {
+    console.error('Server error:', error);
+    res.status(500).json({ message: 'Error tracking achievements' });
+  }
+});
+
 // Get user achievements/medals
 app.get('/api/achievements/:userId', async (req, res) => {
   try {
     const userId = req.params.userId;
-    const stats = await UserStatistics.findOne({ user_id: userId }) || {};
     
-    const achievements = [];
-    if (stats.current_streak >= 7) achievements.push({ type: 'streak', level: 'bronze', description: '7-day streak!' });
-    if (stats.current_streak >= 30) achievements.push({ type: 'streak', level: 'silver', description: '30-day streak!' });
-    if (stats.current_streak >= 100) achievements.push({ type: 'streak', level: 'gold', description: '100-day streak!' });
-    if (stats.total_workouts >= 10) achievements.push({ type: 'workouts', level: 'bronze', description: '10 workouts!' });
-    if (stats.total_workouts >= 50) achievements.push({ type: 'workouts', level: 'silver', description: '50 workouts!' });
-    if (stats.total_workouts >= 200) achievements.push({ type: 'workouts', level: 'gold', description: '200 workouts!' });
+    // Initialize achievements if not exists
+    await initializeAchievements(userId);
+    
+    const achievements = await Achievement.find({ user_id: userId, completed: true })
+      .sort({ completed_at: -1 });
+    
+    res.json(achievements.map(a => ({
+      type: a.achievement_type,
+      level: a.level,
+      description: a.description,
+      name: a.achievement_name,
+      completed_at: a.completed_at
+    })));
+  } catch (error) {
+    console.error('Server error:', error);
+    res.status(500).json({ message: 'Error fetching achievements' });
+  }
+});
+
+// Get all achievements with progress
+app.get('/api/achievements/all/:userId', async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    
+    // Initialize achievements if not exists
+    await initializeAchievements(userId);
+    
+    const achievements = await Achievement.find({ user_id: userId })
+      .sort({ achievement_type: 1, target: 1 });
     
     res.json(achievements);
   } catch (error) {
     console.error('Server error:', error);
-    res.status(500).json({ message: 'Error fetching achievements' });
+    res.status(500).json({ message: 'Error fetching all achievements' });
   }
 });
 
@@ -602,6 +785,23 @@ app.post('/api/statistics/update', async (req, res) => {
         last_workout_date: today
       });
       await newStats.save();
+    }
+    
+    // Track workout achievement
+    await initializeAchievements(user_id);
+    const workoutAchievements = await Achievement.find({ 
+      user_id, 
+      achievement_type: 'workout',
+      completed: false 
+    });
+    
+    for (const achievement of workoutAchievements) {
+      achievement.progress += 1;
+      if (achievement.progress >= achievement.target) {
+        achievement.completed = true;
+        achievement.completed_at = new Date();
+      }
+      await achievement.save();
     }
     
     res.json({ message: 'Statistics updated successfully' });
@@ -863,6 +1063,48 @@ app.get('/api/calendar/weekly/:userId', async (req, res) => {
   } catch (error) {
     console.error('Server error:', error);
     res.status(500).json({ message: 'Error fetching calendar data' });
+  }
+});
+
+// Diet tracking endpoint
+app.post('/api/diet/track', async (req, res) => {
+  try {
+    const { user_id, diet_type } = req.body;
+    if (!user_id || !diet_type) return res.status(400).json({ message: 'User ID and diet type required' });
+
+    // Track diet achievement
+    await initializeAchievements(user_id);
+    const userProfile = await UserProfile.findOne({ user_id }) || {};
+    const triedDiets = userProfile.tried_diets || [];
+    
+    if (!triedDiets.includes(diet_type)) {
+      triedDiets.push(diet_type);
+      await UserProfile.findOneAndUpdate(
+        { user_id },
+        { tried_diets: triedDiets },
+        { upsert: true }
+      );
+      
+      const dietAchievements = await Achievement.find({ 
+        user_id, 
+        achievement_type: 'diet',
+        completed: false 
+      });
+      
+      for (const achievement of dietAchievements) {
+        achievement.progress = triedDiets.length;
+        if (achievement.progress >= achievement.target) {
+          achievement.completed = true;
+          achievement.completed_at = new Date();
+        }
+        await achievement.save();
+      }
+    }
+    
+    res.json({ message: 'Diet tracked successfully' });
+  } catch (error) {
+    console.error('Server error:', error);
+    res.status(500).json({ message: 'Error tracking diet' });
   }
 });
 
