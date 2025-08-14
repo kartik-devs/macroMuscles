@@ -611,6 +611,261 @@ app.post('/api/statistics/update', async (req, res) => {
   }
 });
 
+// Profile picture endpoints
+app.post('/api/profile/picture', async (req, res) => {
+  try {
+    const { user_id, image_url } = req.body;
+    if (!user_id || !image_url) return res.status(400).json({ message: 'User ID and image URL required' });
+
+    const profile = await UserProfile.findOneAndUpdate(
+      { user_id },
+      { profile_picture_url: image_url },
+      { upsert: true, new: true }
+    );
+
+    res.json({ message: 'Profile picture updated successfully' });
+  } catch (error) {
+    console.error('Server error:', error);
+    res.status(500).json({ message: 'Error updating profile picture' });
+  }
+});
+
+app.get('/api/profile/picture/:userId', async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    const profile = await UserProfile.findOne({ user_id: userId });
+    
+    if (!profile || !profile.profile_picture_url) {
+      return res.status(404).json({ message: 'Profile picture not found' });
+    }
+    
+    res.json({ profile_picture: { image_url: profile.profile_picture_url } });
+  } catch (error) {
+    console.error('Server error:', error);
+    res.status(500).json({ message: 'Error fetching profile picture' });
+  }
+});
+
+// User level and experience endpoints
+app.get('/api/profile/level/:userId', async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    const stats = await UserStatistics.findOne({ user_id: userId });
+    
+    if (!stats) {
+      return res.json({ level: 1, experience_points: 0 });
+    }
+    
+    // Calculate level based on total workouts (simple formula)
+    const level = Math.floor(stats.total_workouts / 10) + 1;
+    const experience_points = stats.total_workouts * 10 + stats.total_calories_burned;
+    
+    res.json({ level, experience_points });
+  } catch (error) {
+    console.error('Server error:', error);
+    res.status(500).json({ message: 'Error fetching user level' });
+  }
+});
+
+// User badges endpoint
+app.get('/api/profile/badges/:userId', async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    const stats = await UserStatistics.findOne({ user_id: userId }) || {};
+    const personalBests = await PersonalBest.find({ user_id: userId });
+    
+    const badges = [];
+    
+    // Workout count badges
+    if (stats.total_workouts >= 1) badges.push({ name: 'First Steps', icon: 'fitness', color: '#44bd32' });
+    if (stats.total_workouts >= 10) badges.push({ name: 'Dedicated', icon: 'trophy', color: '#f39c12' });
+    if (stats.total_workouts >= 50) badges.push({ name: 'Committed', icon: 'medal', color: '#e74c3c' });
+    if (stats.total_workouts >= 100) badges.push({ name: 'Elite', icon: 'star', color: '#9b59b6' });
+    
+    // Streak badges
+    if (stats.current_streak >= 3) badges.push({ name: 'On Fire', icon: 'flame', color: '#e67e22' });
+    if (stats.current_streak >= 7) badges.push({ name: 'Week Warrior', icon: 'calendar', color: '#3498db' });
+    if (stats.current_streak >= 30) badges.push({ name: 'Month Master', icon: 'time', color: '#2ecc71' });
+    
+    // Personal best badges
+    if (personalBests.length >= 1) badges.push({ name: 'Strong Start', icon: 'barbell', color: '#34495e' });
+    if (personalBests.length >= 5) badges.push({ name: 'Power Lifter', icon: 'fitness', color: '#e74c3c' });
+    
+    res.json({ badges });
+  } catch (error) {
+    console.error('Server error:', error);
+    res.status(500).json({ message: 'Error fetching badges' });
+  }
+});
+
+// Body measurements endpoints
+app.post('/api/body-measurements', async (req, res) => {
+  try {
+    const { user_id, weight, body_fat_percentage, muscle_mass, date } = req.body;
+    if (!user_id) return res.status(400).json({ message: 'User ID required' });
+
+    // Update profile with latest measurements
+    await UserProfile.findOneAndUpdate(
+      { user_id },
+      {
+        weight: weight || null,
+        body_fat_percentage: body_fat_percentage || null,
+        muscle_mass: muscle_mass || null,
+        last_measurement_date: date ? new Date(date) : new Date()
+      },
+      { upsert: true }
+    );
+
+    res.json({ message: 'Body measurements saved successfully' });
+  } catch (error) {
+    console.error('Server error:', error);
+    res.status(500).json({ message: 'Error saving body measurements' });
+  }
+});
+
+app.get('/api/body-measurements/:userId', async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    const profile = await UserProfile.findOne({ user_id: userId });
+    
+    if (!profile) {
+      return res.json({ weight: null, body_fat_percentage: null, muscle_mass: null });
+    }
+    
+    res.json({
+      weight: profile.weight,
+      body_fat_percentage: profile.body_fat_percentage,
+      muscle_mass: profile.muscle_mass,
+      last_measurement_date: profile.last_measurement_date
+    });
+  } catch (error) {
+    console.error('Server error:', error);
+    res.status(500).json({ message: 'Error fetching body measurements' });
+  }
+});
+
+// Weekly progress endpoint
+app.get('/api/progress/weekly/:userId', async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(endDate.getDate() - 7);
+    
+    const workouts = await WorkoutHistory.find({
+      user_id: userId,
+      completed_at: { $gte: startDate, $lte: endDate }
+    });
+    
+    const stats = await UserStatistics.findOne({ user_id: userId }) || {};
+    const goals = await UserGoal.findOne({ user_id: userId, is_active: true }) || {};
+    
+    // Calculate weekly progress
+    const weeklyWorkouts = workouts.length;
+    const weeklyGoal = 5; // Default weekly workout goal
+    const workoutProgress = Math.min((weeklyWorkouts / weeklyGoal) * 100, 100);
+    
+    res.json({
+      workout_progress: Math.round(workoutProgress),
+      current_streak: stats.current_streak || 0,
+      weekly_workouts: weeklyWorkouts,
+      weekly_goal: weeklyGoal
+    });
+  } catch (error) {
+    console.error('Server error:', error);
+    res.status(500).json({ message: 'Error fetching weekly progress' });
+  }
+});
+
+// Recent activity endpoint
+app.get('/api/activity/recent/:userId', async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    const limit = parseInt(req.query.limit) || 10;
+    
+    const workouts = await WorkoutHistory.find({ user_id: userId })
+      .sort({ completed_at: -1 })
+      .limit(limit);
+    
+    const personalBests = await PersonalBest.find({ user_id: userId })
+      .sort({ date_achieved: -1 })
+      .limit(3);
+    
+    const activities = [];
+    
+    // Add workout activities
+    workouts.forEach(workout => {
+      activities.push({
+        type: 'workout',
+        title: `${workout.workout_type} Workout`,
+        time: workout.completed_at,
+        duration: workout.duration,
+        calories: workout.calories_burned,
+        icon: 'fitness'
+      });
+    });
+    
+    // Add personal best activities
+    personalBests.forEach(pb => {
+      activities.push({
+        type: 'achievement',
+        title: `New PR: ${pb.exercise_name}`,
+        time: pb.date_achieved,
+        weight: pb.weight,
+        icon: 'trophy'
+      });
+    });
+    
+    // Sort by time and limit
+    activities.sort((a, b) => new Date(b.time) - new Date(a.time));
+    
+    res.json(activities.slice(0, limit));
+  } catch (error) {
+    console.error('Server error:', error);
+    res.status(500).json({ message: 'Error fetching recent activity' });
+  }
+});
+
+// Workout calendar endpoint
+app.get('/api/calendar/weekly/:userId', async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(endDate.getDate() - 6); // Last 7 days
+    
+    const workouts = await WorkoutHistory.find({
+      user_id: userId,
+      completed_at: { $gte: startDate, $lte: endDate }
+    });
+    
+    // Create array for each day of the week
+    const weekData = [];
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(startDate);
+      date.setDate(startDate.getDate() + i);
+      
+      const dayWorkouts = workouts.filter(w => {
+        const workoutDate = new Date(w.completed_at);
+        return workoutDate.toDateString() === date.toDateString();
+      });
+      
+      weekData.push({
+        date: date.toISOString().split('T')[0],
+        day: date.toLocaleDateString('en', { weekday: 'short' }),
+        hasWorkout: dayWorkouts.length > 0,
+        workoutCount: dayWorkouts.length,
+        isToday: date.toDateString() === new Date().toDateString()
+      });
+    }
+    
+    res.json(weekData);
+  } catch (error) {
+    console.error('Server error:', error);
+    res.status(500).json({ message: 'Error fetching calendar data' });
+  }
+});
+
 // Start server
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);

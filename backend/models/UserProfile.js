@@ -35,6 +35,18 @@ const userProfileSchema = new mongoose.Schema({
   cardio_type: {
     type: String,
     enum: ['running', 'cycling', 'swimming', 'walking', 'elliptical', 'other']
+  },
+  profile_picture_url: {
+    type: String
+  },
+  body_fat_percentage: {
+    type: Number
+  },
+  muscle_mass: {
+    type: Number
+  },
+  last_measurement_date: {
+    type: Date
   }
 }, {
   timestamps: true

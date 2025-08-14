@@ -94,4 +94,59 @@ export const updateUserStatistics = async (statisticsData) => {
   } catch (error) {
     throw error.response ? error.response.data : { message: 'Network error' };
   }
+};
+
+// Save body measurements
+export const saveBodyMeasurements = async (measurementData) => {
+  try {
+    const headers = await getAuthHeaders();
+    const response = await axios.post(`${API_URL}/body-measurements`, measurementData, { headers });
+    return response.data;
+  } catch (error) {
+    throw error.response ? error.response.data : { message: 'Network error' };
+  }
+};
+
+// Get body measurements
+export const getBodyMeasurements = async (userId) => {
+  try {
+    const headers = await getAuthHeaders();
+    const response = await axios.get(`${API_URL}/body-measurements/${userId}`, { headers });
+    return response.data;
+  } catch (error) {
+    throw error.response ? error.response.data : { message: 'Network error' };
+  }
+};
+
+// Get weekly progress
+export const getWeeklyProgress = async (userId) => {
+  try {
+    const headers = await getAuthHeaders();
+    const response = await axios.get(`${API_URL}/progress/weekly/${userId}`, { headers });
+    return response.data;
+  } catch (error) {
+    throw error.response ? error.response.data : { message: 'Network error' };
+  }
+};
+
+// Get recent activity
+export const getRecentActivity = async (userId, limit = 10) => {
+  try {
+    const headers = await getAuthHeaders();
+    const response = await axios.get(`${API_URL}/activity/recent/${userId}?limit=${limit}`, { headers });
+    return response.data;
+  } catch (error) {
+    throw error.response ? error.response.data : { message: 'Network error' };
+  }
+};
+
+// Get weekly calendar data
+export const getWeeklyCalendar = async (userId) => {
+  try {
+    const headers = await getAuthHeaders();
+    const response = await axios.get(`${API_URL}/calendar/weekly/${userId}`, { headers });
+    return response.data;
+  } catch (error) {
+    throw error.response ? error.response.data : { message: 'Network error' };
+  }
 }; 

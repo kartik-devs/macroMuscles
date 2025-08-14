@@ -23,6 +23,9 @@ import HighProteinDiet from './src/screen/diets/HighProteinDiet';
 import MediterraneanDiet from './src/screen/diets/MediterraneanDiet';
 import VeganDiet from './src/screen/diets/VeganDiet';
 import VegetarianDiet from './src/screen/diets/VegetarianDiet';
+import BodyMeasurementsScreen from './src/screen/BodyMeasurementsScreen';
+import AchievementsPage from './src/screen/AchievementsPage';
+import SettingsPage from './src/screen/SettingsPage';
 
 const Stack = createNativeStackNavigator();
 
@@ -64,6 +67,9 @@ export default function App() {
         <Stack.Screen name="MediterraneanDiet" component={MediterraneanDiet} />
         <Stack.Screen name="VeganDiet" component={VeganDiet} />
         <Stack.Screen name="VegetarianDiet" component={VegetarianDiet} />
+        <Stack.Screen name="BodyMeasurementsScreen" component={BodyMeasurementsScreen} />
+        <Stack.Screen name="AchievementsPage" component={AchievementsPage} />
+        <Stack.Screen name="SettingsPage" component={SettingsPage} />
       </Stack.Navigator>
     </NavigationContainer>
   );
