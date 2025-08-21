@@ -13,6 +13,7 @@ import {
   TextInput,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '../context/ThemeContext';
 
 import { 
   getUserProfile, 
@@ -29,6 +30,7 @@ import ProfilePictureUpload from './ProfilePictureUpload';
 import { useNavigation } from '@react-navigation/native';
 
 export default function ProfilePage({ route }) {
+  const { theme } = useTheme();
   const navigation = useNavigation();
   const [userId, setUserId] = useState(null);
   const [isViewingFriend, setIsViewingFriend] = useState(false);
@@ -193,22 +195,22 @@ export default function ProfilePage({ route }) {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="light-content" backgroundColor="#f8f9fa" />
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+        <StatusBar barStyle={theme.colors.statusBar} backgroundColor={theme.colors.background} />
         <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Loading profile...</Text>
+          <Text style={[styles.loadingText, { color: theme.colors.textSecondary }]}>Loading profile...</Text>
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#f8f9fa" />
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <StatusBar barStyle={theme.colors.statusBar} backgroundColor={theme.colors.background} />
       
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Profile Header */}
-        <View style={styles.profileHeader}>
+        <View style={[styles.profileHeader, { backgroundColor: theme.colors.surface }]}>
           <TouchableOpacity 
             style={styles.avatarContainer}
             onPress={() => setProfilePictureModalVisible(true)}
@@ -227,7 +229,7 @@ export default function ProfilePage({ route }) {
             </View>
           </TouchableOpacity>
           
-          <Text style={styles.userName}>{userProfile.display_name}</Text>
+          <Text style={[styles.userName, { color: theme.colors.text }]}>{userProfile.display_name}</Text>
           
           {/* Level Badge */}
           <View style={styles.levelBadge}>
@@ -235,49 +237,49 @@ export default function ProfilePage({ route }) {
             <Text style={styles.levelText}>Level {userLevel.level}</Text>
           </View>
           
-          <TouchableOpacity style={styles.editButton} onPress={handleEditProfile}>
-            <Text style={styles.editButtonText}>edit</Text>
+          <TouchableOpacity style={[styles.editButton, { backgroundColor: theme.colors.border }]} onPress={handleEditProfile}>
+            <Text style={[styles.editButtonText, { color: theme.colors.text }]}>edit</Text>
           </TouchableOpacity>
         </View>
 
         {/* Quick Actions */}
-        <View style={styles.quickActions}>
+        <View style={[styles.quickActions, { backgroundColor: theme.colors.card }]}>
           <TouchableOpacity 
             style={styles.quickAction}
             onPress={() => Alert.alert('Friends', 'Friends feature coming soon!')}
           >
             <Ionicons name="people" size={24} color="#0097e6" />
-            <Text style={styles.quickActionText}>Friends</Text>
+            <Text style={[styles.quickActionText, { color: theme.colors.textSecondary }]}>Friends</Text>
           </TouchableOpacity>
           <TouchableOpacity 
             style={styles.quickAction}
             onPress={() => navigation.navigate('AchievementsPage')}
           >
             <Ionicons name="trophy" size={24} color="#f39c12" />
-            <Text style={styles.quickActionText}>Achievements</Text>
+            <Text style={[styles.quickActionText, { color: theme.colors.textSecondary }]}>Achievements</Text>
           </TouchableOpacity>
           <TouchableOpacity 
             style={styles.quickAction}
             onPress={() => navigation.navigate('SettingsPage')}
           >
             <Ionicons name="settings" size={24} color="#666" />
-            <Text style={styles.quickActionText}>Settings</Text>
+            <Text style={[styles.quickActionText, { color: theme.colors.textSecondary }]}>Settings</Text>
           </TouchableOpacity>
           <TouchableOpacity 
             style={styles.quickAction}
             onPress={() => Alert.alert('Share Profile', `Check out my fitness journey! Level ${userLevel.level} with ${userStats.total_workouts} workouts completed!`)}
           >
             <Ionicons name="share-social" size={24} color="#44bd32" />
-            <Text style={styles.quickActionText}>Share</Text>
+            <Text style={[styles.quickActionText, { color: theme.colors.textSecondary }]}>Share</Text>
           </TouchableOpacity>
         </View>
 
         {/* Progress Overview */}
-        <View style={styles.section}>
+        <View style={[styles.section, { backgroundColor: theme.colors.card }]}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Weekly Progress</Text>
+            <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Weekly Progress</Text>
             <TouchableOpacity onPress={() => Alert.alert('Progress Details', `Weekly Goal: ${weeklyProgress.weekly_workouts}/${weeklyProgress.weekly_goal || 5} workouts\nCurrent Streak: ${weeklyProgress.current_streak} days`)}>
-              <Text style={styles.viewAllText}>View Details</Text>
+              <Text style={[styles.viewAllText, { color: theme.colors.secondary }]}>View Details</Text>
             </TouchableOpacity>
           </View>
           <View style={styles.progressOverview}>
@@ -285,90 +287,90 @@ export default function ProfilePage({ route }) {
               <View style={styles.progressCircle}>
                 <Text style={styles.progressValue}>{weeklyProgress.workout_progress}%</Text>
               </View>
-              <Text style={styles.progressLabel}>Workout Goal</Text>
+              <Text style={[styles.progressLabel, { color: theme.colors.textSecondary }]}>Workout Goal</Text>
             </View>
             <View style={styles.progressItem}>
               <View style={[styles.progressCircle, { backgroundColor: '#f39c12' }]}>
                 <Text style={styles.progressValue}>{weeklyProgress.current_streak}</Text>
               </View>
-              <Text style={styles.progressLabel}>Day Streak</Text>
+              <Text style={[styles.progressLabel, { color: theme.colors.textSecondary }]}>Day Streak</Text>
             </View>
             <View style={styles.progressItem}>
               <View style={[styles.progressCircle, { backgroundColor: '#44bd32' }]}>
                 <Text style={styles.progressValue}>{weeklyProgress.weekly_workouts}</Text>
               </View>
-              <Text style={styles.progressLabel}>This Week</Text>
+              <Text style={[styles.progressLabel, { color: theme.colors.textSecondary }]}>This Week</Text>
             </View>
           </View>
         </View>
 
         {/* Body Measurements */}
-        <View style={styles.section}>
+        <View style={[styles.section, { backgroundColor: theme.colors.card }]}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Body Measurements</Text>
+            <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Body Measurements</Text>
             <TouchableOpacity onPress={() => navigation.navigate('BodyMeasurementsScreen')}>
               <Ionicons name="add" size={24} color="#0097e6" />
             </TouchableOpacity>
           </View>
           <View style={styles.measurementGrid}>
-            <View style={styles.measurementCard}>
-              <Text style={styles.measurementValue}>{bodyMeasurements.weight || '--'}</Text>
-              <Text style={styles.measurementUnit}>kg</Text>
-              <Text style={styles.measurementLabel}>Weight</Text>
-              <Text style={styles.measurementChange}>{bodyMeasurements.weight ? 'Track progress' : 'Add measurement'}</Text>
+            <View style={[styles.measurementCard, { backgroundColor: theme.colors.background }]}>
+              <Text style={[styles.measurementValue, { color: theme.colors.text }]}>{bodyMeasurements.weight || '--'}</Text>
+              <Text style={[styles.measurementUnit, { color: theme.colors.textSecondary }]}>kg</Text>
+              <Text style={[styles.measurementLabel, { color: theme.colors.text }]}>Weight</Text>
+              <Text style={[styles.measurementChange, { color: theme.colors.success }]}>{bodyMeasurements.weight ? 'Track progress' : 'Add measurement'}</Text>
             </View>
-            <View style={styles.measurementCard}>
-              <Text style={styles.measurementValue}>{bodyMeasurements.body_fat_percentage || '--'}</Text>
-              <Text style={styles.measurementUnit}>%</Text>
-              <Text style={styles.measurementLabel}>Body Fat</Text>
-              <Text style={styles.measurementChange}>{bodyMeasurements.body_fat_percentage ? 'Track progress' : 'Add measurement'}</Text>
+            <View style={[styles.measurementCard, { backgroundColor: theme.colors.background }]}>
+              <Text style={[styles.measurementValue, { color: theme.colors.text }]}>{bodyMeasurements.body_fat_percentage || '--'}</Text>
+              <Text style={[styles.measurementUnit, { color: theme.colors.textSecondary }]}>%</Text>
+              <Text style={[styles.measurementLabel, { color: theme.colors.text }]}>Body Fat</Text>
+              <Text style={[styles.measurementChange, { color: theme.colors.success }]}>{bodyMeasurements.body_fat_percentage ? 'Track progress' : 'Add measurement'}</Text>
             </View>
           </View>
         </View>
 
         {/* User Statistics Section */}
-        <View style={styles.section}>
+        <View style={[styles.section, { backgroundColor: theme.colors.card }]}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>All-Time Stats</Text>
+            <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>All-Time Stats</Text>
             <TouchableOpacity onPress={() => Alert.alert('Analytics', `Total Stats:\n• ${userStats.total_workouts} workouts\n• ${userStats.total_calories_burned} calories burned\n• ${formatTime(userStats.total_workout_time)} total time\n• Level ${userLevel.level} (${userLevel.experience_points} XP)`)}>
-              <Text style={styles.viewAllText}>Analytics</Text>
+              <Text style={[styles.viewAllText, { color: theme.colors.secondary }]}>Analytics</Text>
             </TouchableOpacity>
           </View>
           
           <View style={styles.statsContainer}>
             <View style={styles.statItem}>
-              <Text style={styles.statValue}>{userStats.total_workouts}</Text>
-              <Text style={styles.statLabel}>Workouts</Text>
+              <Text style={[styles.statValue, { color: theme.colors.secondary }]}>{userStats.total_workouts}</Text>
+              <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Workouts</Text>
               <View style={styles.statTrend}>
-                <Ionicons name="trending-up" size={12} color="#44bd32" />
-                <Text style={styles.statTrendText}>+12%</Text>
+                <Ionicons name="trending-up" size={12} color={theme.colors.success} />
+                <Text style={[styles.statTrendText, { color: theme.colors.success }]}>+12%</Text>
               </View>
             </View>
             
             <View style={styles.statItem}>
-              <Text style={styles.statValue}>{userStats.total_calories_burned}</Text>
-              <Text style={styles.statLabel}>Calories</Text>
+              <Text style={[styles.statValue, { color: theme.colors.secondary }]}>{userStats.total_calories_burned}</Text>
+              <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Calories</Text>
               <View style={styles.statTrend}>
-                <Ionicons name="trending-up" size={12} color="#44bd32" />
-                <Text style={styles.statTrendText}>+8%</Text>
+                <Ionicons name="trending-up" size={12} color={theme.colors.success} />
+                <Text style={[styles.statTrendText, { color: theme.colors.success }]}>+8%</Text>
               </View>
             </View>
             
             <View style={styles.statItem}>
-              <Text style={styles.statValue}>{formatTime(userStats.total_workout_time)}</Text>
-              <Text style={styles.statLabel}>Time</Text>
+              <Text style={[styles.statValue, { color: theme.colors.secondary }]}>{formatTime(userStats.total_workout_time)}</Text>
+              <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Time</Text>
               <View style={styles.statTrend}>
-                <Ionicons name="trending-up" size={12} color="#44bd32" />
-                <Text style={styles.statTrendText}>+15%</Text>
+                <Ionicons name="trending-up" size={12} color={theme.colors.success} />
+                <Text style={[styles.statTrendText, { color: theme.colors.success }]}>+15%</Text>
               </View>
             </View>
             
             <View style={styles.statItem}>
-              <Text style={styles.statValue}>{userLevel.experience_points}</Text>
-              <Text style={styles.statLabel}>XP</Text>
+              <Text style={[styles.statValue, { color: theme.colors.secondary }]}>{userLevel.experience_points}</Text>
+              <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>XP</Text>
               <View style={styles.statTrend}>
                 <Ionicons name="star" size={12} color="#f39c12" />
-                <Text style={styles.statTrendText}>Lvl {userLevel.level}</Text>
+                <Text style={[styles.statTrendText, { color: '#f39c12' }]}>Lvl {userLevel.level}</Text>
               </View>
             </View>
           </View>
@@ -556,35 +558,39 @@ export default function ProfilePage({ route }) {
         onRequestClose={() => setEditModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Edit Profile</Text>
+          <View style={[styles.modalContent, { backgroundColor: theme.colors.card }]}>
+            <Text style={[styles.modalTitle, { color: theme.colors.text }]}>Edit Profile</Text>
             
             <TextInput
-              style={styles.modalInput}
+              style={[styles.modalInput, { backgroundColor: theme.colors.background, color: theme.colors.text, borderColor: theme.colors.border }]}
               placeholder="Display Name"
+              placeholderTextColor={theme.colors.textTertiary}
               value={editForm.display_name}
               onChangeText={(text) => setEditForm({...editForm, display_name: text})}
             />
             
             <TextInput
-              style={styles.modalInput}
+              style={[styles.modalInput, { backgroundColor: theme.colors.background, color: theme.colors.text, borderColor: theme.colors.border }]}
               placeholder="Height (cm)"
+              placeholderTextColor={theme.colors.textTertiary}
               value={editForm.height}
               onChangeText={(text) => setEditForm({...editForm, height: text})}
               keyboardType="numeric"
             />
             
             <TextInput
-              style={styles.modalInput}
+              style={[styles.modalInput, { backgroundColor: theme.colors.background, color: theme.colors.text, borderColor: theme.colors.border }]}
               placeholder="Weight (kg)"
+              placeholderTextColor={theme.colors.textTertiary}
               value={editForm.weight}
               onChangeText={(text) => setEditForm({...editForm, weight: text})}
               keyboardType="numeric"
             />
             
             <TextInput
-              style={styles.modalInput}
+              style={[styles.modalInput, { backgroundColor: theme.colors.background, color: theme.colors.text, borderColor: theme.colors.border }]}
               placeholder="Age"
+              placeholderTextColor={theme.colors.textTertiary}
               value={editForm.age}
               onChangeText={(text) => setEditForm({...editForm, age: text})}
               keyboardType="numeric"
@@ -592,14 +598,14 @@ export default function ProfilePage({ route }) {
             
             <View style={styles.modalButtons}>
               <TouchableOpacity 
-                style={[styles.modalButton, styles.cancelButton]}
+                style={[styles.modalButton, styles.cancelButton, { backgroundColor: theme.colors.border }]}
                 onPress={() => setEditModalVisible(false)}
               >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
+                <Text style={[styles.cancelButtonText, { color: theme.colors.textSecondary }]}>Cancel</Text>
               </TouchableOpacity>
               
               <TouchableOpacity 
-                style={[styles.modalButton, styles.saveButton]}
+                style={[styles.modalButton, styles.saveButton, { backgroundColor: theme.colors.secondary }]}
                 onPress={handleSaveProfile}
               >
                 <Text style={styles.saveButtonText}>Save</Text>
@@ -625,7 +631,6 @@ export default function ProfilePage({ route }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
   },
   loadingContainer: {
     flex: 1,
@@ -637,7 +642,6 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   profileHeader: {
-    backgroundColor: '#fff',
     paddingVertical: 20,
     alignItems: 'center',
     position: 'relative',
@@ -664,7 +668,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 0,
     right: 0,
-    backgroundColor: '#0097e6',
     borderRadius: 12,
     padding: 4,
   },
@@ -696,7 +699,6 @@ const styles = StyleSheet.create({
   quickActions: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    backgroundColor: '#fff',
     marginHorizontal: 15,
     marginTop: 10,
     borderRadius: 12,
@@ -887,13 +889,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     paddingVertical: 5,
     borderRadius: 15,
-    backgroundColor: '#f0f0f0',
   },
   editButtonText: {
     fontSize: 14,
   },
   section: {
-    backgroundColor: '#fff',
     marginTop: 20,
     paddingVertical: 15,
     borderRadius: 10,
@@ -995,7 +995,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalContent: {
-    backgroundColor: '#fff',
     borderRadius: 12,
     padding: 20,
     width: '85%',
@@ -1013,7 +1012,6 @@ const styles = StyleSheet.create({
   },
   modalInput: {
     borderWidth: 1,
-    borderColor: '#ddd',
     borderRadius: 8,
     padding: 12,
     marginBottom: 16,
@@ -1030,14 +1028,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cancelButton: {
-    backgroundColor: '#f0f0f0',
     marginRight: 8,
   },
   cancelButtonText: {
-    color: '#666',
   },
   saveButton: {
-    backgroundColor: '#0097e6',
     marginLeft: 8,
   },
   saveButtonText: {

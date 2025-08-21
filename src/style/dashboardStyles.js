@@ -5,7 +5,6 @@ const { width, height } = Dimensions.get('window');
 export const dashboardStyles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
   },
   header: {
     paddingHorizontal: 20,
@@ -17,17 +16,14 @@ export const dashboardStyles = StyleSheet.create({
   },
   welcomeText: {
     fontSize: 14,
-    color: '#666',
   },
   userName: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#1a1a1a',
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
     marginHorizontal: 20,
     borderRadius: 12,
     paddingHorizontal: 15,
@@ -45,7 +41,6 @@ export const dashboardStyles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 16,
-    color: '#333',
   },
   sectionContainer: {
     marginTop: 20,
@@ -54,7 +49,6 @@ export const dashboardStyles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#1a1a1a',
     marginBottom: 15,
   },
   workoutList: {
@@ -129,7 +123,6 @@ export const dashboardStyles = StyleSheet.create({
     marginTop: 8,
   },
   calendarContainer: {
-    backgroundColor: '#fff',
     borderRadius: 12,
     padding: 15,
     shadowColor: '#000',
@@ -147,7 +140,6 @@ export const dashboardStyles = StyleSheet.create({
   calendarTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1a1a1a',
   },
   daysHeader: {
     flexDirection: 'row',
@@ -179,7 +171,6 @@ export const dashboardStyles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: '#fff',
     borderRadius: 12,
     padding: 15,
     marginHorizontal: 5,
@@ -193,17 +184,14 @@ export const dashboardStyles = StyleSheet.create({
   statNumber: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#1a1a1a',
     marginTop: 8,
   },
   statLabel: {
     fontSize: 12,
-    color: '#666',
     marginTop: 4,
   },
   // Recent Workouts Section
   recentWorkoutItem: {
-    backgroundColor: '#fff',
     borderRadius: 12,
     padding: 15,
     marginBottom: 10,
@@ -215,6 +203,7 @@ export const dashboardStyles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
+    borderBottomWidth: 1,
   },
   recentWorkoutInfo: {
     flex: 1,
@@ -222,12 +211,10 @@ export const dashboardStyles = StyleSheet.create({
   recentWorkoutTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1a1a1a',
     marginBottom: 4,
   },
   recentWorkoutDate: {
     fontSize: 12,
-    color: '#666',
   },
   recentWorkoutStats: {
     alignItems: 'flex-end',
@@ -235,11 +222,9 @@ export const dashboardStyles = StyleSheet.create({
   recentWorkoutCalories: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#e91e63',
     marginBottom: 2,
   },
   recentWorkoutDuration: {
     fontSize: 12,
-    color: '#666',
   },
 }); 

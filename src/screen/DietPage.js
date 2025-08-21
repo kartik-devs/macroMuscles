@@ -16,11 +16,13 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { getCurrentUserId } from '../api/auth';
 import { saveUserProfile, getUserProfile } from '../api/profile';
 import { getRecommendedExercises } from './diets/data/exerciseData';
+import { useTheme } from '../context/ThemeContext';
 
 const Tab = createBottomTabNavigator();
 
 // User Preferences Screen
 function UserPreferencesScreen({ navigation }) {
+  const { theme } = useTheme();
   const [selectedDietPreference, setSelectedDietPreference] = useState('');
   const [selectedWorkoutSplit, setSelectedWorkoutSplit] = useState('');
   const [userId, setUserId] = useState(null);
@@ -200,6 +202,7 @@ function UserPreferencesScreen({ navigation }) {
 
 // Recommended Diet Plan Screen
 function RecommendedDietPlanScreen({ route }) {
+  const { theme } = useTheme();
   const { dietPreference, workoutSplit } = route.params || {};
   const [activeTab, setActiveTab] = useState('breakfast');
   const [cheatDayUnlocked, setCheatDayUnlocked] = useState(false);
@@ -475,6 +478,7 @@ function RecommendedDietPlanScreen({ route }) {
 
 // Popular Diet Plans Screen
 function PopularDietPlansScreen({ navigation }) {
+  const { theme } = useTheme();
   const dietSections = [
     {
       title: 'Weight Loss',
@@ -612,6 +616,8 @@ function PopularDietPlansScreen({ navigation }) {
 
 // Main DietPage Component with Tab Navigator
 export default function DietPage({ navigation }) {
+  const { theme } = useTheme();
+  
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -626,10 +632,10 @@ export default function DietPage({ navigation }) {
           }
           return <Ionicons name={iconName} size={size} color={color} />;
         },
-        tabBarActiveTintColor: '#E53935',
-        tabBarInactiveTintColor: '#777',
+        tabBarActiveTintColor: theme.colors.primary,
+        tabBarInactiveTintColor: theme.colors.textTertiary,
         tabBarStyle: {
-          backgroundColor: '#fff',
+          backgroundColor: theme.colors.tabBar,
           borderTopWidth: 0,
           elevation: 10,
           shadowColor: '#000',
@@ -652,26 +658,21 @@ export default function DietPage({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
   },
   header: {
     padding: 20,
-    backgroundColor: '#fff',
     marginBottom: 10,
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#1a1a1a',
     marginBottom: 8,
   },
   headerSubtitle: {
     fontSize: 16,
-    color: '#666',
     lineHeight: 22,
   },
   sectionContainer: {
-    backgroundColor: '#fff',
     margin: 16,
     borderRadius: 16,
     padding: 20,
@@ -684,12 +685,10 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#1a1a1a',
     marginBottom: 8,
   },
   sectionSubtitle: {
     fontSize: 14,
-    color: '#666',
     marginBottom: 20,
   },
   optionsContainer: {

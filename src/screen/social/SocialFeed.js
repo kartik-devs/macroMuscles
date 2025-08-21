@@ -155,43 +155,43 @@ export default function SocialFeed({ navigation }) {
     const isCommenting = activeCommentPost === item.id;
     
     return (
-      <View style={styles.postCard}>
+      <View style={[styles.postCard, { backgroundColor: theme.colors.card }]}>
         <View style={styles.postHeader}>
           <TouchableOpacity 
             style={styles.userInfo}
             onPress={() => viewProfile(item.user_id)}
           >
-            <View style={styles.avatar}>
+            <View style={[styles.avatar, { backgroundColor: theme.colors.primary }]}>
               <Text style={styles.avatarText}>{item.user_name.charAt(0)}</Text>
             </View>
             <View>
-              <Text style={styles.userName}>{item.user_name}</Text>
-              <Text style={styles.postDate}>{formattedDate}</Text>
+              <Text style={[styles.userName, { color: theme.colors.text }]}>{item.user_name}</Text>
+              <Text style={[styles.postDate, { color: theme.colors.textTertiary }]}>{formattedDate}</Text>
             </View>
           </TouchableOpacity>
         </View>
         
         <View style={styles.postContent}>
           {item.caption ? (
-            <Text style={styles.caption}>{item.caption}</Text>
+            <Text style={[styles.caption, { color: theme.colors.text }]}>{item.caption}</Text>
           ) : null}
           
-          <View style={styles.workoutInfo}>
-            <Text style={styles.workoutType}>{item.workout_type}</Text>
+          <View style={[styles.workoutInfo, { backgroundColor: theme.colors.background }]}>
+            <Text style={[styles.workoutType, { color: theme.colors.text }]}>{item.workout_type}</Text>
             <View style={styles.workoutStats}>
               <View style={styles.statItem}>
-                <Ionicons name="time-outline" size={16} color="#666" />
-                <Text style={styles.statText}>{item.duration} min</Text>
+                <Ionicons name="time-outline" size={16} color={theme.colors.textSecondary} />
+                <Text style={[styles.statText, { color: theme.colors.textSecondary }]}>{item.duration} min</Text>
               </View>
               <View style={styles.statItem}>
-                <Ionicons name="flame-outline" size={16} color="#666" />
-                <Text style={styles.statText}>{item.calories_burned} cal</Text>
+                <Ionicons name="flame-outline" size={16} color={theme.colors.textSecondary} />
+                <Text style={[styles.statText, { color: theme.colors.textSecondary }]}>{item.calories_burned} cal</Text>
               </View>
             </View>
           </View>
         </View>
         
-        <View style={styles.postActions}>
+        <View style={[styles.postActions, { borderTopColor: theme.colors.border }]}>
           <TouchableOpacity 
             style={styles.actionButton}
             onPress={() => handleLike(item)}
@@ -199,9 +199,9 @@ export default function SocialFeed({ navigation }) {
             <Ionicons 
               name={item.user_liked ? "heart" : "heart-outline"} 
               size={22} 
-              color={item.user_liked ? "#e91e63" : "#666"} 
+              color={item.user_liked ? "#e91e63" : theme.colors.textSecondary} 
             />
-            <Text style={styles.actionText}>
+            <Text style={[styles.actionText, { color: theme.colors.textSecondary }]}>
               {item.likes_count} {item.likes_count === 1 ? 'Like' : 'Likes'}
             </Text>
           </TouchableOpacity>
@@ -216,26 +216,27 @@ export default function SocialFeed({ navigation }) {
               }
             }}
           >
-            <Ionicons name="chatbubble-outline" size={22} color="#666" />
-            <Text style={styles.actionText}>Comment</Text>
+            <Ionicons name="chatbubble-outline" size={22} color={theme.colors.textSecondary} />
+            <Text style={[styles.actionText, { color: theme.colors.textSecondary }]}>Comment</Text>
           </TouchableOpacity>
           
           <TouchableOpacity 
             style={styles.actionButton}
             onPress={() => viewComments(item)}
           >
-            <Ionicons name="chatbubbles-outline" size={22} color="#666" />
-            <Text style={styles.actionText}>
+            <Ionicons name="chatbubbles-outline" size={22} color={theme.colors.textSecondary} />
+            <Text style={[styles.actionText, { color: theme.colors.textSecondary }]}>
               {item.comments_count} {item.comments_count === 1 ? 'Comment' : 'Comments'}
             </Text>
           </TouchableOpacity>
         </View>
         
         {isCommenting && (
-          <View style={styles.commentInput}>
+          <View style={[styles.commentInput, { borderTopColor: theme.colors.border }]}>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { backgroundColor: theme.colors.background, color: theme.colors.text }]}
               placeholder="Write a comment..."
+              placeholderTextColor={theme.colors.textTertiary}
               value={commentText}
               onChangeText={setCommentText}
               multiline
@@ -248,7 +249,7 @@ export default function SocialFeed({ navigation }) {
               <Ionicons 
                 name="send" 
                 size={24} 
-                color={commentText.trim() ? "#E53935" : "#666"} 
+                color={commentText.trim() ? theme.colors.primary : theme.colors.textSecondary} 
               />
             </TouchableOpacity>
           </View>
@@ -309,9 +310,9 @@ export default function SocialFeed({ navigation }) {
         }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Ionicons name="people-outline" size={64} color="#666" />
-            <Text style={styles.emptyText}>No posts to show</Text>
-            <Text style={styles.emptySubtext}>
+            <Ionicons name="people-outline" size={64} color={theme.colors.textSecondary} />
+            <Text style={[styles.emptyText, { color: theme.colors.textSecondary }]}>No posts to show</Text>
+            <Text style={[styles.emptySubtext, { color: theme.colors.textTertiary }]}>
               Connect with friends or share your workouts to see posts here
             </Text>
           </View>
@@ -319,7 +320,7 @@ export default function SocialFeed({ navigation }) {
       />
       
       <TouchableOpacity 
-        style={styles.fab}
+        style={[styles.fab, { backgroundColor: theme.colors.primary }]}
         onPress={() => navigation.navigate('ShareWorkout')}
       >
         <Ionicons name="add" size={24} color="#fff" />
@@ -332,26 +333,21 @@ export default function SocialFeed({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
   },
   contentContainer: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#fff',
     paddingHorizontal: 15,
     paddingVertical: 15,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#333',
   },
   friendsButton: {
     padding: 8,
@@ -360,22 +356,18 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f8f9fa',
   },
   loadingText: {
     marginTop: 10,
     fontSize: 16,
-    color: '#666',
   },
   loadingSubtext: {
     marginTop: 8,
     fontSize: 14,
-    color: '#999',
     textAlign: 'center',
   },
   retryButton: {
     marginTop: 15,
-    backgroundColor: '#E53935',
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 8,
@@ -389,7 +381,6 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   postCard: {
-    backgroundColor: '#fff',
     borderRadius: 12,
     marginHorizontal: 15,
     marginBottom: 15,
@@ -414,7 +405,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#E53935',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 10,
@@ -427,29 +417,24 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#333',
   },
   postDate: {
     fontSize: 12,
-    color: '#999',
   },
   postContent: {
     marginBottom: 15,
   },
   caption: {
     fontSize: 16,
-    color: '#333',
     marginBottom: 10,
   },
   workoutInfo: {
-    backgroundColor: '#E53935',
     borderRadius: 8,
     padding: 12,
   },
   workoutType: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
     marginBottom: 8,
   },
   workoutStats: {
@@ -463,13 +448,11 @@ const styles = StyleSheet.create({
   statText: {
     marginLeft: 5,
     fontSize: 14,
-    color: '#666',
   },
   postActions: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     borderTopWidth: 1,
-    borderTopColor: '#eee',
     paddingTop: 12,
   },
   actionButton: {
@@ -479,19 +462,16 @@ const styles = StyleSheet.create({
   actionText: {
     marginLeft: 5,
     fontSize: 14,
-    color: '#666',
   },
   commentInput: {
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: 10,
     borderTopWidth: 1,
-    borderTopColor: '#eee',
     paddingTop: 10,
   },
   input: {
     flex: 1,
-    backgroundColor: '#f0f2f5',
     borderRadius: 20,
     paddingHorizontal: 15,
     paddingVertical: 8,
@@ -509,12 +489,10 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#666',
     marginTop: 10,
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#999',
     textAlign: 'center',
     marginTop: 5,
   },
@@ -525,7 +503,6 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#E53935',
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 5,

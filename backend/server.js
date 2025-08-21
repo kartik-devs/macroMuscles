@@ -926,6 +926,34 @@ app.post('/api/statistics/update', async (req, res) => {
   }
 });
 
+// Delete user profile and all associated data
+app.delete('/api/profile/delete/:userId', async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    
+    // Delete all user-related data
+    await Promise.all([
+      User.findByIdAndDelete(userId),
+      UserProfile.deleteMany({ user_id: userId }),
+      WorkoutHistory.deleteMany({ user_id: userId }),
+      ChallengeProgress.deleteMany({ user_id: userId }),
+      DailyNutrition.deleteMany({ user_id: userId }),
+      UserGoal.deleteMany({ user_id: userId }),
+      PersonalBest.deleteMany({ user_id: userId }),
+      UserStatistics.deleteMany({ user_id: userId }),
+      Friend.deleteMany({ $or: [{ user_id: userId }, { friend_id: userId }] }),
+      SharedWorkout.deleteMany({ user_id: userId }),
+      WorkoutLike.deleteMany({ user_id: userId }),
+      WorkoutComment.deleteMany({ user_id: userId })
+    ]);
+    
+    res.json({ message: 'Profile deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting profile:', error);
+    res.status(500).json({ message: 'Error deleting profile' });
+  }
+});
+
 // Start server
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);

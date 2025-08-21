@@ -12,8 +12,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { getCurrentUserId } from '../api/auth';
 import { getUserProfile } from '../api/profile';
+import { useTheme } from '../context/ThemeContext';
 
 export default function WorkoutMain({ navigation }) {
+  const { theme } = useTheme();
   const [loading, setLoading] = useState(true);
   const [hasPreferences, setHasPreferences] = useState(false);
   const [userProfile, setUserProfile] = useState(null);
@@ -53,11 +55,11 @@ export default function WorkoutMain({ navigation }) {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" backgroundColor="#f8f9fa" />
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+        <StatusBar barStyle={theme.colors.statusBar} backgroundColor={theme.colors.background} />
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#E53935" />
-          <Text style={styles.loadingText}>Loading your workout plan...</Text>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <Text style={[styles.loadingText, { color: theme.colors.textSecondary }]}>Loading your workout plan...</Text>
         </View>
       </SafeAreaView>
     );
@@ -71,50 +73,50 @@ export default function WorkoutMain({ navigation }) {
 
   // Only show setup screen for first-time users
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-      <StatusBar barStyle="dark-content" backgroundColor="#f8f9fa" />
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top', 'left', 'right']}>
+      <StatusBar barStyle={theme.colors.statusBar} backgroundColor={theme.colors.background} />
       
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Workout</Text>
-          <Text style={styles.headerSubtitle}>
+        <View style={[styles.header, { backgroundColor: theme.colors.surface }]}>
+          <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Workout</Text>
+          <Text style={[styles.headerSubtitle, { color: theme.colors.textSecondary }]}>
             Set up your workout preferences to get started
           </Text>
         </View>
 
         {/* First time user - show setup */}
         <View style={styles.contentContainer}>
-          <View style={styles.infoCard}>
-            <Ionicons name="fitness" size={48} color="#E53935" />
-            <Text style={styles.infoTitle}>Welcome to Workouts!</Text>
-            <Text style={styles.infoText}>
+          <View style={[styles.infoCard, { backgroundColor: theme.colors.card }]}>
+            <Ionicons name="fitness" size={48} color={theme.colors.primary} />
+            <Text style={[styles.infoTitle, { color: theme.colors.text }]}>Welcome to Workouts!</Text>
+            <Text style={[styles.infoText, { color: theme.colors.textSecondary }]}>
               Let's set up your personalized workout plan. We'll ask you about your preferred workout split and cardio preferences.
             </Text>
-            <TouchableOpacity style={styles.primaryButton} onPress={navigateToPreferences}>
+            <TouchableOpacity style={[styles.primaryButton, { backgroundColor: theme.colors.primary }]} onPress={navigateToPreferences}>
               <Text style={styles.primaryButtonText}>GET STARTED</Text>
               <Ionicons name="arrow-forward" size={20} color="#fff" />
             </TouchableOpacity>
           </View>
 
-          <View style={styles.sectionContainer}>
-            <Text style={styles.sectionTitle}>What to Expect</Text>
+          <View style={[styles.sectionContainer, { backgroundColor: theme.colors.card }]}>
+            <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>What to Expect</Text>
             <View style={styles.featuresList}>
               <View style={styles.featureItem}>
-                <Ionicons name="calendar-outline" size={20} color="#666" />
-                <Text style={styles.featureText}>Monthly workout calendar</Text>
+                <Ionicons name="calendar-outline" size={20} color={theme.colors.textSecondary} />
+                <Text style={[styles.featureText, { color: theme.colors.textSecondary }]}>Monthly workout calendar</Text>
               </View>
               <View style={styles.featureItem}>
-                <Ionicons name="barbell-outline" size={20} color="#666" />
-                <Text style={styles.featureText}>Personalized exercise plans</Text>
+                <Ionicons name="barbell-outline" size={20} color={theme.colors.textSecondary} />
+                <Text style={[styles.featureText, { color: theme.colors.textSecondary }]}>Personalized exercise plans</Text>
               </View>
               <View style={styles.featureItem}>
-                <Ionicons name="heart-outline" size={20} color="#666" />
-                <Text style={styles.featureText}>Cardio integration</Text>
+                <Ionicons name="heart-outline" size={20} color={theme.colors.textSecondary} />
+                <Text style={[styles.featureText, { color: theme.colors.textSecondary }]}>Cardio integration</Text>
               </View>
               <View style={styles.featureItem}>
-                <Ionicons name="trophy-outline" size={20} color="#666" />
-                <Text style={styles.featureText}>Progress tracking</Text>
+                <Ionicons name="trophy-outline" size={20} color={theme.colors.textSecondary} />
+                <Text style={[styles.featureText, { color: theme.colors.textSecondary }]}>Progress tracking</Text>
               </View>
             </View>
           </View>
@@ -130,7 +132,6 @@ export default function WorkoutMain({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
   },
   loadingContainer: {
     flex: 1,
@@ -140,29 +141,24 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#666',
   },
   header: {
     padding: 20,
-    backgroundColor: '#fff',
     marginBottom: 10,
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#1a1a1a',
     marginBottom: 8,
   },
   headerSubtitle: {
     fontSize: 16,
-    color: '#666',
     lineHeight: 22,
   },
   contentContainer: {
     padding: 16,
   },
   infoCard: {
-    backgroundColor: '#fff',
     borderRadius: 16,
     padding: 24,
     alignItems: 'center',
@@ -176,20 +172,17 @@ const styles = StyleSheet.create({
   infoTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#1a1a1a',
     marginTop: 16,
     marginBottom: 8,
     textAlign: 'center',
   },
   infoText: {
     fontSize: 14,
-    color: '#666',
     textAlign: 'center',
     lineHeight: 20,
     marginBottom: 24,
   },
   primaryButton: {
-    backgroundColor: '#E53935',
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 24,
@@ -203,7 +196,6 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   sectionContainer: {
-    backgroundColor: '#fff',
     borderRadius: 16,
     padding: 20,
     marginBottom: 16,
@@ -216,7 +208,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#1a1a1a',
     marginBottom: 16,
   },
   featuresList: {
@@ -228,7 +219,6 @@ const styles = StyleSheet.create({
   },
   featureText: {
     fontSize: 14,
-    color: '#666',
     marginLeft: 12,
   },
 }); 

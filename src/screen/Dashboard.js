@@ -19,8 +19,10 @@ import { getCurrentUserId } from '../api/auth';
 import { Calendar } from 'react-native-calendars';
 import { useFocusEffect } from '@react-navigation/native';
 import { getChallengeProgress } from '../api/challenges';
+import { useTheme } from '../context/ThemeContext';
 
 export default function Dashboard({ navigation }) {
+  const { theme } = useTheme();
   const [userName, setUserName] = useState('User');
   const [userId, setUserId] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -242,16 +244,16 @@ export default function Dashboard({ navigation }) {
   );
 
   const renderRecentWorkout = ({ item }) => (
-    <View style={dashboardStyles.recentWorkoutItem}>
+    <View style={[dashboardStyles.recentWorkoutItem, { backgroundColor: theme.colors.card, borderBottomColor: theme.colors.border }]}>
       <View style={dashboardStyles.recentWorkoutInfo}>
-        <Text style={dashboardStyles.recentWorkoutTitle}>{item.workout_type}</Text>
-        <Text style={dashboardStyles.recentWorkoutDate}>
+        <Text style={[dashboardStyles.recentWorkoutTitle, { color: theme.colors.text }]}>{item.workout_type}</Text>
+        <Text style={[dashboardStyles.recentWorkoutDate, { color: theme.colors.textSecondary }]}>
           {new Date(item.completed_at).toLocaleDateString()}
         </Text>
       </View>
       <View style={dashboardStyles.recentWorkoutStats}>
-        <Text style={dashboardStyles.recentWorkoutCalories}>{item.calories_burned} cal</Text>
-        <Text style={dashboardStyles.recentWorkoutDuration}>{item.duration} min</Text>
+        <Text style={[dashboardStyles.recentWorkoutCalories, { color: theme.colors.primary }]}>{item.calories_burned} cal</Text>
+        <Text style={[dashboardStyles.recentWorkoutDuration, { color: theme.colors.textSecondary }]}>{item.duration} min</Text>
       </View>
     </View>
   );
@@ -261,55 +263,55 @@ export default function Dashboard({ navigation }) {
   const currentYear = currentDate.getFullYear();
 
   return (
-    <SafeAreaView style={dashboardStyles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#f8f9fa" />
+    <SafeAreaView style={[dashboardStyles.container, { backgroundColor: theme.colors.background }]}>
+      <StatusBar barStyle={theme.colors.statusBar} backgroundColor={theme.colors.background} />
       
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Header Section */}
-        <View style={dashboardStyles.header}>
+        <View style={[dashboardStyles.header, { backgroundColor: theme.colors.surface }]}>
           <View>
-            <Text style={dashboardStyles.welcomeText}>Hello, welcome back</Text>
-            <Text style={dashboardStyles.userName}>{userName}</Text>
+            <Text style={[dashboardStyles.welcomeText, { color: theme.colors.textSecondary }]}>Hello, welcome back</Text>
+            <Text style={[dashboardStyles.userName, { color: theme.colors.text }]}>{userName}</Text>
           </View>
         </View>
 
         {/* User Stats Section */}
         <View style={dashboardStyles.sectionContainer}>
-          <Text style={dashboardStyles.sectionTitle}>Your Progress</Text>
+          <Text style={[dashboardStyles.sectionTitle, { color: theme.colors.text }]}>Your Progress</Text>
           <View style={dashboardStyles.statsContainer}>
-            <View style={dashboardStyles.statCard}>
-              <Ionicons name="fitness-outline" size={24} color="#0097e6" />
-              <Text style={dashboardStyles.statNumber}>{userStats.total_workouts}</Text>
-              <Text style={dashboardStyles.statLabel}>Workouts</Text>
+            <View style={[dashboardStyles.statCard, { backgroundColor: theme.colors.card }]}>
+              <Ionicons name="fitness-outline" size={24} color={theme.colors.secondary} />
+              <Text style={[dashboardStyles.statNumber, { color: theme.colors.text }]}>{userStats.total_workouts}</Text>
+              <Text style={[dashboardStyles.statLabel, { color: theme.colors.textSecondary }]}>Workouts</Text>
             </View>
             
-            <View style={dashboardStyles.statCard}>
+            <View style={[dashboardStyles.statCard, { backgroundColor: theme.colors.card }]}>
               <Ionicons name="flame-outline" size={24} color="#e91e63" />
-              <Text style={dashboardStyles.statNumber}>{userStats.total_calories_burned}</Text>
-              <Text style={dashboardStyles.statLabel}>Calories</Text>
+              <Text style={[dashboardStyles.statNumber, { color: theme.colors.text }]}>{userStats.total_calories_burned}</Text>
+              <Text style={[dashboardStyles.statLabel, { color: theme.colors.textSecondary }]}>Calories</Text>
             </View>
             
-            <View style={dashboardStyles.statCard}>
-              <Ionicons name="trending-up-outline" size={24} color="#44bd32" />
-              <Text style={dashboardStyles.statNumber}>{userStats.current_streak}</Text>
-              <Text style={dashboardStyles.statLabel}>Streak</Text>
+            <View style={[dashboardStyles.statCard, { backgroundColor: theme.colors.card }]}>
+              <Ionicons name="trending-up-outline" size={24} color={theme.colors.success} />
+              <Text style={[dashboardStyles.statNumber, { color: theme.colors.text }]}>{userStats.current_streak}</Text>
+              <Text style={[dashboardStyles.statLabel, { color: theme.colors.textSecondary }]}>Streak</Text>
             </View>
           </View>
         </View>
 
         {/* Search Bar */}
-        <View style={dashboardStyles.searchContainer}>
-          <Ionicons name="search-outline" size={20} color="#666" style={dashboardStyles.searchIcon} />
+        <View style={[dashboardStyles.searchContainer, { backgroundColor: theme.colors.card }]}>
+          <Ionicons name="search-outline" size={20} color={theme.colors.textSecondary} style={dashboardStyles.searchIcon} />
           <TextInput
-            style={dashboardStyles.searchInput}
+            style={[dashboardStyles.searchInput, { color: theme.colors.text }]}
             placeholder="Search"
-            placeholderTextColor="#999"
+            placeholderTextColor={theme.colors.textTertiary}
           />
         </View>
 
         {/* Popular Workouts Section */}
         <View style={dashboardStyles.sectionContainer}>
-          <Text style={dashboardStyles.sectionTitle}>Popular Workouts</Text>
+          <Text style={[dashboardStyles.sectionTitle, { color: theme.colors.text }]}>Popular Workouts</Text>
           <FlatList
             data={popularWorkouts}
             renderItem={renderWorkoutItem}
@@ -322,7 +324,7 @@ export default function Dashboard({ navigation }) {
 
         {/* Popular Challenges Section */}
         <View style={dashboardStyles.sectionContainer}>
-          <Text style={dashboardStyles.sectionTitle}>Popular Challenges</Text>
+          <Text style={[dashboardStyles.sectionTitle, { color: theme.colors.text }]}>Popular Challenges</Text>
           <FlatList
             data={popularChallenges}
             renderItem={renderChallengeItem}
@@ -336,7 +338,7 @@ export default function Dashboard({ navigation }) {
         {/* Recent Workouts Section */}
         {recentWorkouts.length > 0 && (
           <View style={dashboardStyles.sectionContainer}>
-            <Text style={dashboardStyles.sectionTitle}>Recent Workouts</Text>
+            <Text style={[dashboardStyles.sectionTitle, { color: theme.colors.text }]}>Recent Workouts</Text>
             <FlatList
               data={recentWorkouts}
               renderItem={renderRecentWorkout}
@@ -348,15 +350,15 @@ export default function Dashboard({ navigation }) {
 
         {/* Consistency Report Section */}
         <View style={dashboardStyles.sectionContainer}>
-          <Text style={dashboardStyles.sectionTitle}>Consistency Report</Text>
-          <View style={dashboardStyles.calendarContainer}>
+          <Text style={[dashboardStyles.sectionTitle, { color: theme.colors.text }]}>Consistency Report</Text>
+          <View style={[dashboardStyles.calendarContainer, { backgroundColor: theme.colors.card }]}>
             <View style={dashboardStyles.calendarHeader}>
               <TouchableOpacity>
-                <Ionicons name="chevron-back" size={24} color="#333" />
+                <Ionicons name="chevron-back" size={24} color={theme.colors.text} />
               </TouchableOpacity>
-              <Text style={dashboardStyles.calendarTitle}>{currentMonth} {currentYear}</Text>
+              <Text style={[dashboardStyles.calendarTitle, { color: theme.colors.text }]}>{currentMonth} {currentYear}</Text>
               <TouchableOpacity>
-                <Ionicons name="chevron-forward" size={24} color="#333" />
+                <Ionicons name="chevron-forward" size={24} color={theme.colors.text} />
               </TouchableOpacity>
             </View>
             {/* Calendar Days Header removed, replaced by Calendar component */}
@@ -364,15 +366,19 @@ export default function Dashboard({ navigation }) {
               markingType={'custom'}
               markedDates={markedDates}
               theme={{
+                backgroundColor: theme.colors.card,
+                calendarBackground: theme.colors.card,
+                textSectionTitleColor: theme.colors.textSecondary,
+                dayTextColor: theme.colors.text,
                 todayTextColor: '#e91e63',
-                arrowColor: '#0097e6',
-                textSectionTitleColor: '#666',
-                selectedDayBackgroundColor: '#44bd32',
+                arrowColor: theme.colors.secondary,
+                selectedDayBackgroundColor: theme.colors.success,
                 selectedDayTextColor: '#fff',
-                dotColor: '#44bd32',
+                dotColor: theme.colors.success,
+                monthTextColor: theme.colors.text,
                 'stylesheet.day.basic': {
                   base: { height: 36, width: 36, alignItems: 'center', justifyContent: 'center' },
-                  text: { fontSize: 14 }
+                  text: { fontSize: 14, color: theme.colors.text }
                 }
               }}
               style={{ borderRadius: 12 }}

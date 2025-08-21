@@ -2,6 +2,7 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
+import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 
 import Splash from './src/screen/splash';
 import Login from './src/screen/login/Login';
@@ -29,15 +30,17 @@ import SettingsPage from './src/screen/SettingsPage';
 
 const Stack = createNativeStackNavigator();
 
-export default function App() {
+function AppNavigator() {
+  const { theme } = useTheme();
+  
   return (
     <NavigationContainer>
-      <StatusBar style="light" />
+      <StatusBar style={theme.colors.statusBar} />
       <Stack.Navigator
         initialRouteName="Splash"
         screenOptions={{
           headerShown: false,
-          contentStyle: { backgroundColor: '#1a1a1a' }
+          contentStyle: { backgroundColor: theme.colors.background }
         }}
       >
         <Stack.Screen name="Splash" component={Splash} />
@@ -67,12 +70,20 @@ export default function App() {
         <Stack.Screen name="MediterraneanDiet" component={MediterraneanDiet} />
         <Stack.Screen name="VeganDiet" component={VeganDiet} />
         <Stack.Screen name="VegetarianDiet" component={VegetarianDiet} />
-        <Stack.Screen name="BodyMeasurementScreen" component={BodyMeasurementScreen} />
+        <Stack.Screen name="BodyMeasurementsScreen" component={BodyMeasurementScreen} />
         <Stack.Screen name="AchievementsPage" component={AchievementsPage} />
         <Stack.Screen name="SettingsPage" component={SettingsPage} />
 
         
       </Stack.Navigator>
     </NavigationContainer>
+  );
+}
+
+export default function App() {
+  return (
+    <ThemeProvider>
+      <AppNavigator />
+    </ThemeProvider>
   );
 }

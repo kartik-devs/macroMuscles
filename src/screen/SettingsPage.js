@@ -12,23 +12,36 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useTheme } from '../context/ThemeContext';
+import { getCurrentUserId } from '../api/auth';
+import { deleteUserProfile } from '../api/deleteProfile';
 
 export default function SettingsPage({ navigation }) {
-  const [darkMode, setDarkMode] = useState(true);
+  const { theme, isDarkMode, toggleTheme } = useTheme();
   const [notifications, setNotifications] = useState(true);
   const [workoutReminders, setWorkoutReminders] = useState(true);
   const [soundEffects, setSoundEffects] = useState(true);
+  const [userId, setUserId] = useState(null);
 
   useEffect(() => {
     loadSettings();
+    loadUserId();
   }, []);
+
+  const loadUserId = async () => {
+    try {
+      const id = await getCurrentUserId();
+      setUserId(id);
+    } catch (error) {
+      console.error('Error loading user ID:', error);
+    }
+  };
 
   const loadSettings = async () => {
     try {
       const settings = await AsyncStorage.getItem('appSettings');
       if (settings) {
         const parsed = JSON.parse(settings);
-        setDarkMode(parsed.darkMode ?? true);
         setNotifications(parsed.notifications ?? true);
         setWorkoutReminders(parsed.workoutReminders ?? true);
         setSoundEffects(parsed.soundEffects ?? true);
@@ -40,16 +53,13 @@ export default function SettingsPage({ navigation }) {
 
   const saveSettings = async (newSettings) => {
     try {
-      await AsyncStorage.setItem('appSettings', JSON.stringify(newSettings));
+      const settings = await AsyncStorage.getItem('appSettings');
+      const currentSettings = settings ? JSON.parse(settings) : {};
+      const updatedSettings = { ...currentSettings, ...newSettings };
+      await AsyncStorage.setItem('appSettings', JSON.stringify(updatedSettings));
     } catch (error) {
       console.error('Error saving settings:', error);
     }
-  };
-
-  const handleDarkModeToggle = (value) => {
-    setDarkMode(value);
-    const newSettings = { darkMode: value, notifications, workoutReminders, soundEffects };
-    saveSettings(newSettings);
   };
 
   const handleLogout = () => {
@@ -73,35 +83,68 @@ export default function SettingsPage({ navigation }) {
     );
   };
 
+  const handleDeleteProfile = () => {
+    Alert.alert(
+      'Delete Profile',
+      'This will permanently delete your account and all data. This action cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              if (userId) {
+                await deleteUserProfile(userId);
+                await AsyncStorage.multiRemove(['token', 'userId', 'appSettings']);
+                Alert.alert('Success', 'Profile deleted successfully', [
+                  {
+                    text: 'OK',
+                    onPress: () => navigation.reset({
+                      index: 0,
+                      routes: [{ name: 'Login' }],
+                    })
+                  }
+                ]);
+              }
+            } catch (error) {
+              Alert.alert('Error', 'Failed to delete profile. Please try again.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const SettingItem = ({ icon, title, subtitle, onPress, rightComponent }) => (
     <TouchableOpacity style={styles.settingItem} onPress={onPress}>
       <View style={styles.settingLeft}>
-        <Ionicons name={icon} size={24} color="#0097e6" />
+        <Ionicons name={icon} size={24} color={theme.colors.secondary} />
         <View style={styles.settingText}>
-          <Text style={[styles.settingTitle, { color: darkMode ? '#fff' : '#333' }]}>{title}</Text>
-          {subtitle && <Text style={[styles.settingSubtitle, { color: darkMode ? '#888' : '#666' }]}>{subtitle}</Text>}
+          <Text style={[styles.settingTitle, { color: theme.colors.text }]}>{title}</Text>
+          {subtitle && <Text style={[styles.settingSubtitle, { color: theme.colors.textSecondary }]}>{subtitle}</Text>}
         </View>
       </View>
-      {rightComponent || <Ionicons name="chevron-forward" size={20} color={darkMode ? '#888' : '#666'} />}
+      {rightComponent || <Ionicons name="chevron-forward" size={20} color={theme.colors.textSecondary} />}
     </TouchableOpacity>
   );
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: darkMode ? '#1a1a1a' : '#f8f9fa' }]}>
-      <StatusBar barStyle={darkMode ? "light-content" : "dark-content"} />
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <StatusBar barStyle={theme.colors.statusBar} />
       
-      <View style={[styles.header, { backgroundColor: darkMode ? '#1a1a1a' : '#fff' }]}>
+      <View style={[styles.header, { backgroundColor: theme.colors.surface }]}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color={darkMode ? "#fff" : "#000"} />
+          <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: darkMode ? '#fff' : '#000' }]}>Settings</Text>
+        <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Settings</Text>
         <View style={{ width: 24 }} />
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Appearance */}
-        <View style={[styles.section, { backgroundColor: darkMode ? '#2a2a2a' : '#fff' }]}>
-          <Text style={[styles.sectionTitle, { color: darkMode ? '#fff' : '#000' }]}>Appearance</Text>
+        <View style={[styles.section, { backgroundColor: theme.colors.card }]}>
+          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Appearance</Text>
           
           <SettingItem
             icon="moon"
@@ -109,18 +152,18 @@ export default function SettingsPage({ navigation }) {
             subtitle="Switch between light and dark theme"
             rightComponent={
               <Switch
-                value={darkMode}
-                onValueChange={handleDarkModeToggle}
-                trackColor={{ false: '#767577', true: '#0097e6' }}
-                thumbColor={darkMode ? '#fff' : '#f4f3f4'}
+                value={isDarkMode}
+                onValueChange={toggleTheme}
+                trackColor={{ false: '#767577', true: theme.colors.secondary }}
+                thumbColor={isDarkMode ? '#fff' : '#f4f3f4'}
               />
             }
           />
         </View>
 
         {/* Notifications */}
-        <View style={[styles.section, { backgroundColor: darkMode ? '#2a2a2a' : '#fff' }]}>
-          <Text style={[styles.sectionTitle, { color: darkMode ? '#fff' : '#000' }]}>Notifications</Text>
+        <View style={[styles.section, { backgroundColor: theme.colors.card }]}>
+          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Notifications</Text>
           
           <SettingItem
             icon="notifications"
@@ -131,9 +174,9 @@ export default function SettingsPage({ navigation }) {
                 value={notifications}
                 onValueChange={(value) => {
                   setNotifications(value);
-                  saveSettings({ darkMode, notifications: value, workoutReminders, soundEffects });
+                  saveSettings({ notifications: value });
                 }}
-                trackColor={{ false: '#767577', true: '#0097e6' }}
+                trackColor={{ false: '#767577', true: theme.colors.secondary }}
                 thumbColor={notifications ? '#fff' : '#f4f3f4'}
               />
             }
@@ -148,9 +191,9 @@ export default function SettingsPage({ navigation }) {
                 value={workoutReminders}
                 onValueChange={(value) => {
                   setWorkoutReminders(value);
-                  saveSettings({ darkMode, notifications, workoutReminders: value, soundEffects });
+                  saveSettings({ workoutReminders: value });
                 }}
-                trackColor={{ false: '#767577', true: '#0097e6' }}
+                trackColor={{ false: '#767577', true: theme.colors.secondary }}
                 thumbColor={workoutReminders ? '#fff' : '#f4f3f4'}
               />
             }
@@ -158,8 +201,8 @@ export default function SettingsPage({ navigation }) {
         </View>
 
         {/* Audio */}
-        <View style={[styles.section, { backgroundColor: darkMode ? '#2a2a2a' : '#fff' }]}>
-          <Text style={[styles.sectionTitle, { color: darkMode ? '#fff' : '#000' }]}>Audio</Text>
+        <View style={[styles.section, { backgroundColor: theme.colors.card }]}>
+          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Audio</Text>
           
           <SettingItem
             icon="volume-high"
@@ -170,9 +213,9 @@ export default function SettingsPage({ navigation }) {
                 value={soundEffects}
                 onValueChange={(value) => {
                   setSoundEffects(value);
-                  saveSettings({ darkMode, notifications, workoutReminders, soundEffects: value });
+                  saveSettings({ soundEffects: value });
                 }}
-                trackColor={{ false: '#767577', true: '#0097e6' }}
+                trackColor={{ false: '#767577', true: theme.colors.secondary }}
                 thumbColor={soundEffects ? '#fff' : '#f4f3f4'}
               />
             }
@@ -180,8 +223,8 @@ export default function SettingsPage({ navigation }) {
         </View>
 
         {/* Account */}
-        <View style={[styles.section, { backgroundColor: darkMode ? '#2a2a2a' : '#fff' }]}>
-          <Text style={[styles.sectionTitle, { color: darkMode ? '#fff' : '#000' }]}>Account</Text>
+        <View style={[styles.section, { backgroundColor: theme.colors.card }]}>
+          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Account</Text>
           
           <SettingItem
             icon="person"
@@ -206,8 +249,8 @@ export default function SettingsPage({ navigation }) {
         </View>
 
         {/* Support */}
-        <View style={[styles.section, { backgroundColor: darkMode ? '#2a2a2a' : '#fff' }]}>
-          <Text style={[styles.sectionTitle, { color: darkMode ? '#fff' : '#000' }]}>Support</Text>
+        <View style={[styles.section, { backgroundColor: theme.colors.card }]}>
+          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Support</Text>
           
           <SettingItem
             icon="help-circle"
@@ -232,10 +275,18 @@ export default function SettingsPage({ navigation }) {
         </View>
 
         {/* Logout */}
-        <View style={[styles.section, { backgroundColor: darkMode ? '#2a2a2a' : '#fff' }]}>
+        <View style={[styles.section, { backgroundColor: theme.colors.card }]}>
           <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-            <Ionicons name="log-out" size={24} color="#e74c3c" />
-            <Text style={styles.logoutText}>Logout</Text>
+            <Ionicons name="log-out" size={24} color={theme.colors.error} />
+            <Text style={[styles.logoutText, { color: theme.colors.error }]}>Logout</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Delete Profile */}
+        <View style={[styles.section, { backgroundColor: theme.colors.card }]}>
+          <TouchableOpacity style={styles.deleteButton} onPress={handleDeleteProfile}>
+            <Ionicons name="trash" size={24} color={theme.colors.error} />
+            <Text style={[styles.deleteText, { color: theme.colors.error }]}>Delete Profile</Text>
           </TouchableOpacity>
         </View>
 
@@ -303,7 +354,17 @@ const styles = StyleSheet.create({
   logoutText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#e74c3c',
+    marginLeft: 10,
+  },
+  deleteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 15,
+  },
+  deleteText: {
+    fontSize: 16,
+    fontWeight: '600',
     marginLeft: 10,
   },
 });

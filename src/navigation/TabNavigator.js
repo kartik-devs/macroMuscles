@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '../context/ThemeContext';
 
 // Screens
 import Dashboard from '../screen/Dashboard';
@@ -52,6 +53,8 @@ function SocialStackScreen() {
 const Tab = createBottomTabNavigator();
 
 export default function TabNavigator() {
+  const { theme } = useTheme();
+  
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -72,14 +75,14 @@ export default function TabNavigator() {
 
           return <Ionicons name={iconName} size={size} color={color} />;
         },
-        tabBarActiveTintColor: '#E53935',
-        tabBarInactiveTintColor: '#777',
+        tabBarActiveTintColor: theme.colors.primary,
+        tabBarInactiveTintColor: theme.colors.textTertiary,
         tabBarStyle: {
           position: 'absolute',
           bottom: 25,
           left: 20,
           right: 20,
-          backgroundColor: '#fff',
+          backgroundColor: theme.colors.tabBar,
           borderRadius: 25,
           borderTopWidth: 0,
           elevation: 15,
