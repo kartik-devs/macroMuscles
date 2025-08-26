@@ -22,10 +22,10 @@ const WorkoutComment = require('./models/WorkoutComment');
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key';
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/macromuscles';
 
-// Debug: Log environment variables
-console.log('MONGODB_URI:', process.env.MONGODB_URI);
-console.log('JWT_SECRET:', process.env.JWT_SECRET);
-console.log('PORT:', process.env.PORT);
+// Avoid logging secrets in production
+if (process.env.NODE_ENV !== 'production') {
+  console.log('PORT:', process.env.PORT);
+}
 
 const app = express();
 const PORT = process.env.PORT || 3000;

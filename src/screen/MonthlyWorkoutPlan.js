@@ -16,19 +16,14 @@ import { getRecommendedExercises } from './diets/data/exerciseData';
 export default function MonthlyWorkoutPlan({ navigation, route }) {
   const { workoutSplit, includeCardio, cardioType } = route.params;
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const [monthlyPlan, setMonthlyPlan] = useState([]);
+  const [weekDays, setWeekDays] = useState([]);
+  const [activeIndex, setActiveIndex] = useState(0);
 
   useEffect(() => {
-    generateMonthlyPlan();
+    generateWeeklyPlan();
   }, [workoutSplit, includeCardio, cardioType]);
 
-  const generateMonthlyPlan = () => {
-    const plan = [];
-    const currentMonth = new Date().getMonth();
-    const currentYear = new Date().getFullYear();
-    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-
+  const generateWeeklyPlan = () => {
     const workoutSchedules = {
       push_pull_legs: [
         { day: 'Monday', type: 'Push', color: '#E53935', icon: 'body' },
@@ -67,42 +62,26 @@ export default function MonthlyWorkoutPlan({ navigation, route }) {
         { day: 'Sunday', type: 'Rest', color: '#666', icon: 'bed' },
       ],
     };
-
     const schedule = workoutSchedules[workoutSplit];
-    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-
-    for (let day = 1; day <= daysInMonth; day++) {
-      const date = new Date(currentYear, currentMonth, day);
-      const dayOfWeek = dayNames[date.getDay()];
-      const scheduleItem = schedule.find(item => item.day === dayOfWeek);
-      
-      plan.push({
-        date: date,
-        day: day,
-        type: scheduleItem?.type || 'Rest',
-        color: scheduleItem?.color || '#666',
-        icon: scheduleItem?.icon || 'bed',
-        isToday: date.toDateString() === new Date().toDateString(),
-        isSelected: date.toDateString() === selectedDate.toDateString(),
-      });
-    }
-
-    setMonthlyPlan(plan);
+    const todayIndex = new Date().getDay(); // 0=Sun
+    const normalized = schedule.map((s, idx) => ({ ...s, isToday: idx === todayIndex }));
+    setWeekDays(normalized);
+    setActiveIndex(todayIndex);
   };
 
-  const getCurrentWorkout = () => {
-    const today = monthlyPlan.find(day => day.isToday);
-    if (!today || today.type === 'Rest') return null;
+  const getWorkoutForIndex = (index) => {
+    const selected = weekDays[index];
+    if (!selected || selected.type === 'Rest') return null;
 
     const exercises = getRecommendedExercises(workoutSplit, 'maintenance');
     const workoutDay = exercises.find(day => 
-      day.day.toLowerCase().includes(today.type.toLowerCase())
+      day.day.toLowerCase().includes(selected.type.toLowerCase())
     );
 
     return {
-      type: today.type,
-      color: today.color,
-      icon: today.icon,
+      type: selected.type,
+      color: selected.color,
+      icon: selected.icon,
       exercises: workoutDay?.exercises || [],
       cardio: includeCardio ? {
         type: cardioType,
@@ -117,7 +96,7 @@ export default function MonthlyWorkoutPlan({ navigation, route }) {
     };
   };
 
-  const currentWorkout = getCurrentWorkout();
+  const currentWorkout = getWorkoutForIndex(activeIndex);
 
   const renderCalendarDay = (day) => (
     <TouchableOpacity
@@ -172,6 +151,18 @@ export default function MonthlyWorkoutPlan({ navigation, route }) {
     </View>
   );
 
+  const renderDayTab = (item, index) => (
+    <TouchableOpacity
+      key={item.day}
+      style={[styles.dayTab, index === activeIndex ? styles.dayTabActive : null]}
+      onPress={() => setActiveIndex(index)}
+    >
+      <Text style={[styles.dayTabText, index === activeIndex ? styles.dayTabTextActive : null]}>
+        {item.day.substring(0,3)}
+      </Text>
+    </TouchableOpacity>
+  );
+
   const getDifficultyColor = (difficulty) => {
     switch (difficulty) {
       case 'beginner': return '#44bd32';
@@ -195,21 +186,30 @@ export default function MonthlyWorkoutPlan({ navigation, route }) {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-      <StatusBar barStyle="dark-content" backgroundColor="#f8f9fa" />
+      <StatusBar barStyle="light-content" backgroundColor="#000" />
       
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Monthly Workout Plan</Text>
+          <Text style={styles.headerTitle}>Your Week</Text>
           <Text style={styles.headerSubtitle}>
-            Your personalized {workoutSplit.replace('_', ' ')} split for {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+            {workoutSplit.replace('_', ' ')} split • {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
           </Text>
         </View>
+
+        {/* Horizontal Day Tabs */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.weekTabsContainer}
+        >
+          {weekDays.map(renderDayTab)}
+        </ScrollView>
 
         {/* Today's Workout Card */}
         <View style={styles.todayCard}>
           <View style={styles.todayHeader}>
-            <Text style={styles.todayTitle}>Today's Workout</Text>
+            <Text style={styles.todayTitle}>{weekDays[activeIndex]?.day || 'Workout'}</Text>
             <Text style={styles.todayDate}>
               {currentDate.toLocaleDateString('en-US', { 
                 weekday: 'long', 
@@ -228,12 +228,12 @@ export default function MonthlyWorkoutPlan({ navigation, route }) {
               
               <View style={styles.workoutStats}>
                 <View style={styles.statItem}>
-                  <Ionicons name="barbell" size={16} color="#666" />
+                  <Ionicons name="barbell" size={16} color="#bbb" />
                   <Text style={styles.statText}>{currentWorkout.exercises.length} exercises</Text>
                 </View>
                 {currentWorkout.cardio && (
                   <View style={styles.statItem}>
-                    <Ionicons name="heart" size={16} color="#666" />
+                    <Ionicons name="heart" size={16} color="#bbb" />
                     <Text style={styles.statText}>{currentWorkout.cardio.duration}</Text>
                   </View>
                 )}
@@ -246,46 +246,14 @@ export default function MonthlyWorkoutPlan({ navigation, route }) {
             </View>
           ) : (
             <View style={styles.restDayContainer}>
-              <Ionicons name="bed" size={48} color="#666" />
+              <Ionicons name="bed" size={48} color="#777" />
               <Text style={styles.restDayTitle}>Rest Day</Text>
               <Text style={styles.restDayText}>Take it easy and recover today!</Text>
             </View>
           )}
         </View>
 
-        {/* Calendar Section */}
-        <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Monthly Calendar</Text>
-          <Text style={styles.sectionSubtitle}>Tap on any day to view details</Text>
-          
-          <View style={styles.calendarContainer}>
-            {monthlyPlan.map((day, index) => (
-              <View key={index} style={styles.calendarDayWrapper}>
-                {renderCalendarDay(day)}
-              </View>
-            ))}
-          </View>
-          
-          {/* Calendar Legend */}
-          <View style={styles.calendarLegend}>
-            <View style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: '#E53935' }]} />
-              <Text style={styles.legendText}>Push/Chest</Text>
-            </View>
-            <View style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: '#44bd32' }]} />
-              <Text style={styles.legendText}>Pull/Back</Text>
-            </View>
-            <View style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: '#0097e6' }]} />
-              <Text style={styles.legendText}>Legs/Shoulders</Text>
-            </View>
-            <View style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: '#666' }]} />
-              <Text style={styles.legendText}>Rest</Text>
-            </View>
-          </View>
-        </View>
+        {/* Calendar removed per new design */}
 
         {/* Workout Split Info */}
         <View style={styles.sectionContainer}>
@@ -293,12 +261,12 @@ export default function MonthlyWorkoutPlan({ navigation, route }) {
           
           <View style={styles.splitInfo}>
             <View style={styles.splitItem}>
-              <Ionicons name="calendar" size={20} color="#E53935" />
+              <Ionicons name="calendar" size={20} color="#fff" />
               <Text style={styles.splitText}>{workoutSplit.replace('_', ' ').toUpperCase()}</Text>
             </View>
             {includeCardio && (
               <View style={styles.splitItem}>
-                <Ionicons name="heart" size={20} color="#44bd32" />
+                <Ionicons name="heart" size={20} color="#fff" />
                 <Text style={styles.splitText}>{cardioType.toUpperCase()} CARDIO</Text>
               </View>
             )}
@@ -315,11 +283,11 @@ export default function MonthlyWorkoutPlan({ navigation, route }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#000',
   },
   header: {
     padding: 20,
-    backgroundColor: '#fff',
+    backgroundColor: '#000',
     marginBottom: 10,
   },
   headerTitle: {
@@ -333,16 +301,32 @@ const styles = StyleSheet.create({
     color: '#666',
     lineHeight: 22,
   },
+  weekTabsContainer: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  dayTab: {
+    backgroundColor: '#111',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    marginRight: 8,
+  },
+  dayTabActive: {
+    backgroundColor: '#E53935',
+  },
+  dayTabText: {
+    color: '#bbb',
+    fontWeight: '600',
+  },
+  dayTabTextActive: {
+    color: '#fff',
+  },
   todayCard: {
-    backgroundColor: '#fff',
+    backgroundColor: '#111',
     margin: 16,
     borderRadius: 16,
     padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
   },
   todayHeader: {
     marginBottom: 16,
@@ -350,12 +334,12 @@ const styles = StyleSheet.create({
   todayTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#1a1a1a',
+    color: '#fff',
     marginBottom: 4,
   },
   todayDate: {
     fontSize: 14,
-    color: '#666',
+    color: '#bbb',
   },
   workoutInfo: {
     alignItems: 'center',
@@ -374,7 +358,7 @@ const styles = StyleSheet.create({
   workoutType: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#1a1a1a',
+    color: '#fff',
   },
   workoutStats: {
     flexDirection: 'row',
@@ -387,7 +371,7 @@ const styles = StyleSheet.create({
   },
   statText: {
     fontSize: 14,
-    color: '#666',
+    color: '#bbb',
     marginLeft: 4,
   },
   startWorkoutButton: {
@@ -411,7 +395,7 @@ const styles = StyleSheet.create({
   restDayTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#666',
+    color: '#bbb',
     marginTop: 12,
     marginBottom: 4,
   },
@@ -421,25 +405,20 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   sectionContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: '#111',
     margin: 16,
     borderRadius: 16,
     padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
   },
   sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#1a1a1a',
+    color: '#fff',
     marginBottom: 8,
   },
   sectionSubtitle: {
     fontSize: 14,
-    color: '#666',
+    color: '#bbb',
     marginBottom: 20,
   },
   calendarContainer: {
@@ -509,11 +488,11 @@ const styles = StyleSheet.create({
   splitText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#1a1a1a',
+    color: '#fff',
     marginLeft: 8,
   },
   exerciseCard: {
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#0f0f0f',
     borderRadius: 8,
     padding: 12,
     marginBottom: 8,
@@ -527,7 +506,7 @@ const styles = StyleSheet.create({
   exerciseName: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#1a1a1a',
+    color: '#fff',
   },
   difficultyBadge: {
     paddingHorizontal: 8,
@@ -546,30 +525,7 @@ const styles = StyleSheet.create({
   },
   exerciseDetail: {
     fontSize: 12,
-    color: '#666',
+    color: '#bbb',
   },
-  calendarLegend: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    marginTop: 20,
-    paddingHorizontal: 4,
-  },
-  legendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-    width: '48%',
-  },
-  legendDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    marginRight: 8,
-  },
-  legendText: {
-    fontSize: 12,
-    color: '#666',
-    fontWeight: '500',
-  },
+  // calendar styles removed in black UI redesign
 }); 

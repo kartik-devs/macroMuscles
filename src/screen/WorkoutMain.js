@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { getCurrentUserId } from '../api/auth';
 import { getUserProfile } from '../api/profile';
@@ -16,14 +17,31 @@ import { getUserProfile } from '../api/profile';
 export default function WorkoutMain({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [hasPreferences, setHasPreferences] = useState(false);
+  const [introSeen, setIntroSeen] = useState(null); // null=loading, true/false after check
   const [userProfile, setUserProfile] = useState(null);
 
   useEffect(() => {
-    checkUserPreferences();
+    checkIntroAndPreferences();
   }, []);
 
-  const checkUserPreferences = async () => {
+  // Navigate based on intro and preferences without rendering blank screen
+  useEffect(() => {
+    if (loading || introSeen === null) return;
+    if (introSeen && hasPreferences && userProfile) {
+      navigation.replace('MonthlyWorkoutPlan', {
+        workoutSplit: userProfile.workout_split,
+        includeCardio: userProfile.include_cardio || false,
+        cardioType: userProfile.cardio_type || 'mid',
+      });
+    } else if (introSeen && !hasPreferences) {
+      navigation.replace('WorkoutPreferences');
+    }
+  }, [loading, introSeen, hasPreferences, userProfile]);
+
+  const checkIntroAndPreferences = async () => {
     try {
+      const seen = await AsyncStorage.getItem('workout_intro_seen');
+      setIntroSeen(seen === 'true');
       const userId = await getCurrentUserId();
       if (userId) {
         const profile = await getUserProfile(userId);
@@ -41,9 +59,9 @@ export default function WorkoutMain({ navigation }) {
     navigation.navigate('WorkoutPreferences');
   };
 
-  const navigateToMonthlyPlan = () => {
+  const navigateToPlan = () => {
     if (userProfile) {
-      navigation.navigate('MonthlyWorkoutPlan', {
+      navigation.replace('MonthlyWorkoutPlan', {
         workoutSplit: userProfile.workout_split,
         includeCardio: userProfile.include_cardio || false,
         cardioType: userProfile.cardio_type || 'mid',
@@ -51,10 +69,20 @@ export default function WorkoutMain({ navigation }) {
     }
   };
 
-  if (loading) {
+  const onIntroContinue = async () => {
+    try {
+      await AsyncStorage.setItem('workout_intro_seen', 'true');
+      setIntroSeen(true);
+      navigation.replace('WorkoutPreferences');
+    } catch (e) {
+      navigation.replace('WorkoutPreferences');
+    }
+  };
+
+  if (loading || introSeen === null) {
     return (
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" backgroundColor="#f8f9fa" />
+        <StatusBar barStyle="light-content" backgroundColor="#000" />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#E53935" />
           <Text style={styles.loadingText}>Loading your workout plan...</Text>
@@ -63,74 +91,47 @@ export default function WorkoutMain({ navigation }) {
     );
   }
 
-  // If user has preferences, show monthly plan directly
-  if (hasPreferences) {
-    navigateToMonthlyPlan();
-    return null; // Return null to prevent rendering while navigating
+  // If intro has been seen and user has preferences, effect will redirect
+  if (introSeen && hasPreferences) return null;
+
+  // Intro screen (shown only once ever)
+  if (!introSeen) {
+    return (
+      <SafeAreaView style={styles.introContainer} edges={['top', 'left', 'right']}>
+        <StatusBar barStyle="light-content" backgroundColor="#000" />
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.introContent}>
+          <Ionicons name="barbell" size={56} color="#fff" />
+          <Text style={styles.introTitle}>Welcome to Workouts</Text>
+          <Text style={styles.introSubtitle}>Personalized weekly plans, quick start, and simple tracking.</Text>
+          <View style={styles.introFeatureRow}>
+            <Ionicons name="flash" size={20} color="#fff" />
+            <Text style={styles.introFeatureText}>Quick-start today's session</Text>
+          </View>
+          <View style={styles.introFeatureRow}>
+            <Ionicons name="calendar" size={20} color="#fff" />
+            <Text style={styles.introFeatureText}>Clean weekly view</Text>
+          </View>
+          <View style={styles.introFeatureRow}>
+            <Ionicons name="heart" size={20} color="#fff" />
+            <Text style={styles.introFeatureText}>Optional cardio integration</Text>
+          </View>
+          <TouchableOpacity style={styles.introPrimaryButton} onPress={onIntroContinue}>
+            <Text style={styles.introPrimaryText}>Set Preferences</Text>
+            <Ionicons name="arrow-forward" size={20} color="#000" />
+          </TouchableOpacity>
+        </ScrollView>
+      </SafeAreaView>
+    );
   }
 
-  // Only show setup screen for first-time users
-  return (
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-      <StatusBar barStyle="dark-content" backgroundColor="#f8f9fa" />
-      
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Workout</Text>
-          <Text style={styles.headerSubtitle}>
-            Set up your workout preferences to get started
-          </Text>
-        </View>
-
-        {/* First time user - show setup */}
-        <View style={styles.contentContainer}>
-          <View style={styles.infoCard}>
-            <Ionicons name="fitness" size={48} color="#E53935" />
-            <Text style={styles.infoTitle}>Welcome to Workouts!</Text>
-            <Text style={styles.infoText}>
-              Let's set up your personalized workout plan. We'll ask you about your preferred workout split and cardio preferences.
-            </Text>
-            <TouchableOpacity style={styles.primaryButton} onPress={navigateToPreferences}>
-              <Text style={styles.primaryButtonText}>GET STARTED</Text>
-              <Ionicons name="arrow-forward" size={20} color="#fff" />
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.sectionContainer}>
-            <Text style={styles.sectionTitle}>What to Expect</Text>
-            <View style={styles.featuresList}>
-              <View style={styles.featureItem}>
-                <Ionicons name="calendar-outline" size={20} color="#666" />
-                <Text style={styles.featureText}>Monthly workout calendar</Text>
-              </View>
-              <View style={styles.featureItem}>
-                <Ionicons name="barbell-outline" size={20} color="#666" />
-                <Text style={styles.featureText}>Personalized exercise plans</Text>
-              </View>
-              <View style={styles.featureItem}>
-                <Ionicons name="heart-outline" size={20} color="#666" />
-                <Text style={styles.featureText}>Cardio integration</Text>
-              </View>
-              <View style={styles.featureItem}>
-                <Ionicons name="trophy-outline" size={20} color="#666" />
-                <Text style={styles.featureText}>Progress tracking</Text>
-              </View>
-            </View>
-          </View>
-        </View>
-
-        {/* Bottom spacing */}
-        <View style={{ height: 80 }} />
-      </ScrollView>
-    </SafeAreaView>
-  );
+  // If intro seen but no preferences yet, effect will redirect
+  return null;
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#000',
   },
   loadingContainer: {
     flex: 1,
@@ -144,46 +145,41 @@ const styles = StyleSheet.create({
   },
   header: {
     padding: 20,
-    backgroundColor: '#fff',
+    backgroundColor: '#000',
     marginBottom: 10,
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#1a1a1a',
+    color: '#fff',
     marginBottom: 8,
   },
   headerSubtitle: {
     fontSize: 16,
-    color: '#666',
+    color: '#aaa',
     lineHeight: 22,
   },
   contentContainer: {
     padding: 16,
   },
   infoCard: {
-    backgroundColor: '#fff',
+    backgroundColor: '#111',
     borderRadius: 16,
     padding: 24,
     alignItems: 'center',
     marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
   },
   infoTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#1a1a1a',
+    color: '#fff',
     marginTop: 16,
     marginBottom: 8,
     textAlign: 'center',
   },
   infoText: {
     fontSize: 14,
-    color: '#666',
+    color: '#aaa',
     textAlign: 'center',
     lineHeight: 20,
     marginBottom: 24,
@@ -203,20 +199,15 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   sectionContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: '#111',
     borderRadius: 16,
     padding: 20,
     marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#1a1a1a',
+    color: '#fff',
     marginBottom: 16,
   },
   featuresList: {
@@ -228,7 +219,53 @@ const styles = StyleSheet.create({
   },
   featureText: {
     fontSize: 14,
-    color: '#666',
+    color: '#aaa',
     marginLeft: 12,
+  },
+
+  // Intro specific styles (pure black UI)
+  introContainer: {
+    flex: 1,
+    backgroundColor: '#000',
+  },
+  introContent: {
+    padding: 24,
+    alignItems: 'center',
+    gap: 16,
+  },
+  introTitle: {
+    color: '#fff',
+    fontSize: 26,
+    fontWeight: '800',
+    marginTop: 12,
+  },
+  introSubtitle: {
+    color: '#aaa',
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  introFeatureRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  introFeatureText: {
+    color: '#ddd',
+    fontSize: 14,
+  },
+  introPrimaryButton: {
+    marginTop: 12,
+    backgroundColor: '#fff',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 10,
+    gap: 8,
+  },
+  introPrimaryText: {
+    color: '#000',
+    fontSize: 16,
+    fontWeight: '700',
   },
 }); 

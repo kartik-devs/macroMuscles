@@ -1,3 +1,19 @@
+Deployment (Fly.io)
+
+1) Prereqs
+- Install Docker
+- Install Fly CLI: https://fly.io/docs/hands-on/install-flyctl/
+
+2) Add secrets (after app launch)
+- JWT_SECRET: your secret
+- MONGODB_URI: Atlas connection string
+
+3) Commands
+- flyctl launch (choose Node, set internal port = 3000)
+- flyctl secrets set JWT_SECRET=... MONGODB_URI=...
+- flyctl deploy
+
+Health check: GET /api/health returns { status: 'ok' }
 # MacroMuscles Backend
 
 This is the backend server for the MacroMuscles fitness app, built with Node.js, Express, and MongoDB.

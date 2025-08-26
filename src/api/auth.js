@@ -6,7 +6,22 @@ import { API_URL } from './config';
 export const getToken = async () => {
   const token = await AsyncStorage.getItem('token');
   console.log('Loaded token:', token);
+  if (token) {
+    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+  }
   return token;
+};
+
+// Initialize axios auth header from stored token (call at app start)
+export const initAuth = async () => {
+  try {
+    const token = await AsyncStorage.getItem('token');
+    if (token) {
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    } else {
+      delete axios.defaults.headers.common['Authorization'];
+    }
+  } catch {}
 };
 
 // Register a new user
@@ -26,6 +41,7 @@ export const loginUser = async (credentials) => {
     if (response.data && response.data.token) {
       await AsyncStorage.setItem('token', response.data.token);
       console.log('Saved token:', response.data.token);
+      axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
     }
     // Store user data in AsyncStorage
     if (response.data && response.data.user) {

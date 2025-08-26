@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import {
   Dimensions,
   Image,
   Alert,
+  Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { saveWorkoutHistory } from '../api/workouts';
@@ -199,6 +200,64 @@ export default function DailyWorkout({ navigation, route }) {
   
   const progressPercentage = calculateProgress();
 
+  // Small two-frame demo component for exercise form visualization
+  const getExerciseFrames = (exerciseName) => {
+    // Map specific exercises to frames if desired; fallback to defaults
+    // You can expand this mapping with real per-exercise frames later
+    return [
+      require('../assets/dumbbell.jpg'),
+      require('../assets/kettle.jpg'),
+    ];
+  };
+  
+  const [previewVisible, setPreviewVisible] = useState(false);
+  const [previewFrames, setPreviewFrames] = useState([]);
+
+  const FancyTwoFrameDemo = ({ frames, size = 56, interval = 900, borderColor = '#333' }) => {
+    const opacityA = useRef(new Animated.Value(1)).current;
+    const opacityB = useRef(new Animated.Value(0)).current;
+    const scale = useRef(new Animated.Value(1)).current;
+
+    useEffect(() => {
+      const loop = setInterval(() => {
+        Animated.parallel([
+          Animated.sequence([
+            Animated.timing(scale, { toValue: 1.03, duration: 250, useNativeDriver: true }),
+            Animated.timing(scale, { toValue: 1, duration: 250, useNativeDriver: true }),
+          ]),
+          Animated.sequence([
+            Animated.timing(opacityA, { toValue: 0, duration: 250, useNativeDriver: true }),
+            Animated.timing(opacityA, { toValue: 1, duration: 250, delay: 250, useNativeDriver: true }),
+          ]),
+          Animated.sequence([
+            Animated.timing(opacityB, { toValue: 1, duration: 250, useNativeDriver: true }),
+            Animated.timing(opacityB, { toValue: 0, duration: 250, delay: 250, useNativeDriver: true }),
+          ]),
+        ]).start();
+      }, interval);
+      return () => clearInterval(loop);
+    }, [interval]);
+
+    const onPress = () => {
+      setPreviewFrames(frames);
+      setPreviewVisible(true);
+    };
+
+    const radius = size / 2;
+    return (
+      <TouchableOpacity onPress={onPress} activeOpacity={0.85}>
+        <View style={[styles.demoOuterRing, { width: size + 8, height: size + 8, borderRadius: radius + 4, borderColor }]}>
+          <View style={[styles.demoInnerRing, { width: size + 2, height: size + 2, borderRadius: radius + 1 }]}> 
+            <Animated.View style={{ transform: [{ scale }], width: size, height: size, borderRadius: radius, overflow: 'hidden' }}>
+              <Animated.Image source={frames[0]} style={[styles.demoImage, { opacity: opacityA }]} />
+              <Animated.Image source={frames[1]} style={[styles.demoImage, { opacity: opacityB }]} />
+            </Animated.View>
+          </View>
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
   const completeWorkout = async () => {
     try {
       // Calculate total duration (for demo purposes, let's assume 1 minute per completed set)
@@ -253,8 +312,15 @@ export default function DailyWorkout({ navigation, route }) {
           <View style={[styles.muscleDot, { backgroundColor: getDifficultyColor(exercise.difficulty) }]} />
           <Text style={styles.exerciseName}>{exercise.name}</Text>
         </View>
-        <View style={[styles.difficultyBadge, { backgroundColor: getDifficultyColor(exercise.difficulty) }]}>
-          <Text style={styles.difficultyText}>{exercise.difficulty}</Text>
+        <View style={styles.exerciseRight}>
+          <FancyTwoFrameDemo 
+            frames={getExerciseFrames(exercise.name)} 
+            size={54} 
+            borderColor={getDifficultyColor(exercise.difficulty)}
+          />
+          <View style={[styles.difficultyBadge, { backgroundColor: getDifficultyColor(exercise.difficulty) }]}>
+            <Text style={styles.difficultyText}>{exercise.difficulty}</Text>
+          </View>
         </View>
       </View>
       
@@ -465,6 +531,22 @@ export default function DailyWorkout({ navigation, route }) {
           </View>
         </ScrollView>
       )}
+      {/* Preview Modal */}
+      <Modal
+        visible={previewVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setPreviewVisible(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalContent}>
+            <FancyTwoFrameDemo frames={previewFrames.length ? previewFrames : getExerciseFrames('')} size={200} interval={800} borderColor={'#E53935'} />
+            <TouchableOpacity style={styles.modalClose} onPress={() => setPreviewVisible(false)}>
+              <Ionicons name="close" size={22} color="#000" />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -595,6 +677,56 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 16,
+  },
+  exerciseRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  demoCircle: {
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#333',
+    marginRight: 8,
+  },
+  demoOuterRing: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#333',
+  },
+  demoInnerRing: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#222',
+    backgroundColor: '#111',
+    overflow: 'hidden',
+  },
+  demoImage: {
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 24,
+    alignItems: 'center',
+  },
+  modalClose: {
+    marginTop: 16,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
   },
   exerciseNameContainer: {
     flexDirection: 'row',

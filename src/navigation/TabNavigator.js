@@ -17,6 +17,7 @@ import WorkoutPreferences from '../screen/WorkoutPreferences';
 import MonthlyWorkoutPlan from '../screen/MonthlyWorkoutPlan';
 import DailyWorkout from '../screen/DailyWorkout';
 import Settings from '../screen/Settings';
+import BodyMeasurementScreen from '../screen/BodyMeasurementScreen';
 
 
 // Create stack navigator for workout screens
@@ -45,6 +46,7 @@ function SocialStackScreen() {
       <SocialStack.Screen name="Comments" component={Comments} />
       <SocialStack.Screen name="UserProfile" component={ProfilePage} />
       <SocialStack.Screen name="Settings" component={Settings} />
+      <SocialStack.Screen name="BodyMeasurementsScreen" component={BodyMeasurementScreen} />
     </SocialStack.Navigator>
   );
 }
@@ -73,23 +75,14 @@ export default function TabNavigator() {
           return <Ionicons name={iconName} size={size} color={color} />;
         },
         tabBarActiveTintColor: '#E53935',
-        tabBarInactiveTintColor: '#777',
+        tabBarInactiveTintColor: '#888',
         tabBarStyle: {
-          position: 'absolute',
-          bottom: 25,
-          left: 20,
-          right: 20,
-          backgroundColor: '#fff',
-          borderRadius: 25,
-          borderTopWidth: 0,
-          elevation: 15,
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 10 },
-          shadowOpacity: 0.1,
-          shadowRadius: 20,
-          height: 70,
-          paddingBottom: 10,
-          paddingTop: 10,
+          backgroundColor: '#000',
+          borderTopColor: '#111',
+          height: 58,
+          paddingBottom: 6,
+          paddingTop: 6,
+          elevation: 0,
         },
         headerShown: false,
       })}
@@ -102,23 +95,7 @@ export default function TabNavigator() {
           )
         }}
       />
-      <Tab.Screen 
-        name="Workout" 
-        component={WorkoutStackScreen} 
-        options={{
-          tabBarButton: (props) => (
-            <TouchableOpacity 
-              style={styles.workoutTabContainer}
-              onPress={props.onPress}
-              activeOpacity={0.8}
-            >
-              <View style={styles.workoutTab}>
-                <Ionicons name="barbell" size={26} color="#fff" />
-              </View>
-            </TouchableOpacity>
-          ),
-        }}
-      />
+      <Tab.Screen name="Workout" component={WorkoutStackScreen} />
       <Tab.Screen name="Diet" component={DietPage} />
       <Tab.Screen name="Profile" component={ProfilePage} />
     </Tab.Navigator>
@@ -134,28 +111,5 @@ const styles = StyleSheet.create({
   text: {
     fontSize: 18,
   },
-  workoutTabContainer: {
-    position: 'absolute',
-    bottom: 15,
-    height: 70,
-    width: 80,
-    justifyContent: 'center',
-    alignItems: 'center',
-    left: '50%',
-    transform: [{ translateX: -30 }],
-  },
-  workoutTab: {
-    backgroundColor: '#FF6B35',
-    width: 65,
-    height: 65,
-    borderRadius: 32.5,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#FF6B35',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 15,
-    elevation: 12,
-    bottom: 10,
-  },
+  // Removed floating middle button styles for a simpler tab bar
 }); 

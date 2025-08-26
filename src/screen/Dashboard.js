@@ -181,9 +181,32 @@ export default function Dashboard({ navigation }) {
     },
   ];
 
-  const handleWorkoutPress = async (workout) => {
-    // Navigate to the main workout screen which will handle preferences check
-    navigation.navigate('Workout', { screen: 'WorkoutMain' });
+  const handleWorkoutPress = async (item) => {
+    try {
+      const id = await getCurrentUserId();
+      if (!id) {
+        navigation.navigate('Workout', { screen: 'WorkoutMain' });
+        return;
+      }
+      const profile = await getUserProfile(id);
+      if (!profile?.workout_split) {
+        navigation.navigate('Workout', { screen: 'WorkoutMain' });
+        return;
+      }
+      // Build a quick workout for today based on user's split
+      // Reuse MonthlyWorkoutPlan logic indirectly by navigating into workout stack
+      navigation.navigate('Workout', {
+        screen: 'MonthlyWorkoutPlan',
+        params: {
+          workoutSplit: profile.workout_split,
+          includeCardio: profile.include_cardio || false,
+          cardioType: profile.cardio_type || 'mid',
+          quickStart: true,
+        }
+      });
+    } catch (e) {
+      navigation.navigate('Workout', { screen: 'WorkoutMain' });
+    }
   };
 
   const renderWorkoutItem = ({ item }) => (
@@ -261,55 +284,55 @@ export default function Dashboard({ navigation }) {
   const currentYear = currentDate.getFullYear();
 
   return (
-    <SafeAreaView style={dashboardStyles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#f8f9fa" />
+    <SafeAreaView style={[dashboardStyles.container, { backgroundColor: '#000' }]}>
+      <StatusBar barStyle="light-content" backgroundColor="#000" />
       
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Header Section */}
-        <View style={dashboardStyles.header}>
+        <View style={[dashboardStyles.header, { backgroundColor: '#000' }]}>
           <View>
-            <Text style={dashboardStyles.welcomeText}>Hello, welcome back</Text>
-            <Text style={dashboardStyles.userName}>{userName}</Text>
+            <Text style={[dashboardStyles.welcomeText, { color: '#aaa' }]}>Hello, welcome back</Text>
+            <Text style={[dashboardStyles.userName, { color: '#fff' }]}>{userName}</Text>
           </View>
         </View>
 
         {/* User Stats Section */}
-        <View style={dashboardStyles.sectionContainer}>
-          <Text style={dashboardStyles.sectionTitle}>Your Progress</Text>
+        <View style={[dashboardStyles.sectionContainer, { paddingHorizontal: 20 }]}>
+          <Text style={[dashboardStyles.sectionTitle, { color: '#fff' }]}>Your Progress</Text>
           <View style={dashboardStyles.statsContainer}>
             <View style={dashboardStyles.statCard}>
-              <Ionicons name="fitness-outline" size={24} color="#0097e6" />
-              <Text style={dashboardStyles.statNumber}>{userStats.total_workouts}</Text>
-              <Text style={dashboardStyles.statLabel}>Workouts</Text>
+              <Ionicons name="fitness-outline" size={24} color="#fff" />
+              <Text style={[dashboardStyles.statNumber, { color: '#fff' }]}>{userStats.total_workouts}</Text>
+              <Text style={[dashboardStyles.statLabel, { color: '#bbb' }]}>Workouts</Text>
             </View>
             
             <View style={dashboardStyles.statCard}>
-              <Ionicons name="flame-outline" size={24} color="#e91e63" />
-              <Text style={dashboardStyles.statNumber}>{userStats.total_calories_burned}</Text>
-              <Text style={dashboardStyles.statLabel}>Calories</Text>
+              <Ionicons name="flame-outline" size={24} color="#fff" />
+              <Text style={[dashboardStyles.statNumber, { color: '#fff' }]}>{userStats.total_calories_burned}</Text>
+              <Text style={[dashboardStyles.statLabel, { color: '#bbb' }]}>Calories</Text>
             </View>
             
             <View style={dashboardStyles.statCard}>
-              <Ionicons name="trending-up-outline" size={24} color="#44bd32" />
-              <Text style={dashboardStyles.statNumber}>{userStats.current_streak}</Text>
-              <Text style={dashboardStyles.statLabel}>Streak</Text>
+              <Ionicons name="trending-up-outline" size={24} color="#fff" />
+              <Text style={[dashboardStyles.statNumber, { color: '#fff' }]}>{userStats.current_streak}</Text>
+              <Text style={[dashboardStyles.statLabel, { color: '#bbb' }]}>Streak</Text>
             </View>
           </View>
         </View>
 
         {/* Search Bar */}
-        <View style={dashboardStyles.searchContainer}>
-          <Ionicons name="search-outline" size={20} color="#666" style={dashboardStyles.searchIcon} />
+        <View style={[dashboardStyles.searchContainer, { backgroundColor: '#111' }]}>
+          <Ionicons name="search-outline" size={20} color="#bbb" style={dashboardStyles.searchIcon} />
           <TextInput
-            style={dashboardStyles.searchInput}
+            style={[dashboardStyles.searchInput, { color: '#fff' }]}
             placeholder="Search"
-            placeholderTextColor="#999"
+            placeholderTextColor="#666"
           />
         </View>
 
         {/* Popular Workouts Section */}
-        <View style={dashboardStyles.sectionContainer}>
-          <Text style={dashboardStyles.sectionTitle}>Popular Workouts</Text>
+        <View style={[dashboardStyles.sectionContainer, { paddingHorizontal: 20 }]}>
+          <Text style={[dashboardStyles.sectionTitle, { color: '#fff' }]}>Quick Start</Text>
           <FlatList
             data={popularWorkouts}
             renderItem={renderWorkoutItem}
@@ -321,8 +344,8 @@ export default function Dashboard({ navigation }) {
         </View>
 
         {/* Popular Challenges Section */}
-        <View style={dashboardStyles.sectionContainer}>
-          <Text style={dashboardStyles.sectionTitle}>Popular Challenges</Text>
+        <View style={[dashboardStyles.sectionContainer, { paddingHorizontal: 20 }]}>
+          <Text style={[dashboardStyles.sectionTitle, { color: '#fff' }]}>Popular Challenges</Text>
           <FlatList
             data={popularChallenges}
             renderItem={renderChallengeItem}

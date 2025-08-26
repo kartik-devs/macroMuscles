@@ -1,6 +1,8 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { View, Text, ImageBackground, FlatList, TouchableOpacity, Dimensions } from 'react-native';
 import { styles } from '../../src/style/styles';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { initAuth, getToken } from '../../src/api/auth';
 
 const { width, height } = Dimensions.get('window');
 
@@ -28,6 +30,18 @@ const slides = [
 export default function Splash({ navigation }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const flatListRef = useRef();
+
+  useEffect(() => {
+    const tryAuto = async () => {
+      await initAuth();
+      const token = await getToken();
+      const userData = await AsyncStorage.getItem('userData');
+      if (token && userData) {
+        navigation.replace('MainApp');
+      }
+    };
+    tryAuto();
+  }, []);
 
   const handleContinue = () => {
     if (currentIndex < slides.length - 1) {

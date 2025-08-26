@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,7 +9,7 @@ import {
   Alert,
 } from 'react-native';
 import { loginStyles } from '../../style/loginStyles';
-import { loginUser } from '../../api/auth';
+import { loginUser, initAuth, getToken } from '../../api/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function Login({ navigation }) {
@@ -19,6 +19,18 @@ export default function Login({ navigation }) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const checkExisting = async () => {
+      await initAuth();
+      const token = await getToken();
+      const userData = await AsyncStorage.getItem('userData');
+      if (token && userData) {
+        navigation.reset({ index: 0, routes: [{ name: 'MainApp' }] });
+      }
+    };
+    checkExisting();
+  }, []);
 
   const handleLogin = async () => {
     // Clear previous errors

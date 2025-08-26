@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
@@ -26,15 +26,33 @@ import VegetarianDiet from './src/screen/diets/VegetarianDiet';
 import BodyMeasurementScreen from './src/screen/BodyMeasurementScreen';
 import AchievementsPage from './src/screen/AchievementsPage';
 import SettingsPage from './src/screen/SettingsPage';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { initAuth, getToken } from './src/api/auth';
 
 const Stack = createNativeStackNavigator();
 
 export default function App() {
+  const [initialRoute, setInitialRoute] = useState('Splash');
+
+  useEffect(() => {
+    const bootstrap = async () => {
+      await initAuth();
+      const token = await getToken();
+      const userData = await AsyncStorage.getItem('userData');
+      if (token && userData) {
+        setInitialRoute('MainApp');
+      } else {
+        setInitialRoute('Splash');
+      }
+    };
+    bootstrap();
+  }, []);
+
   return (
     <NavigationContainer>
       <StatusBar style="light" />
       <Stack.Navigator
-        initialRouteName="Splash"
+        initialRouteName={initialRoute}
         screenOptions={{
           headerShown: false,
           contentStyle: { backgroundColor: '#1a1a1a' }
@@ -67,7 +85,7 @@ export default function App() {
         <Stack.Screen name="MediterraneanDiet" component={MediterraneanDiet} />
         <Stack.Screen name="VeganDiet" component={VeganDiet} />
         <Stack.Screen name="VegetarianDiet" component={VegetarianDiet} />
-        <Stack.Screen name="BodyMeasurementScreen" component={BodyMeasurementScreen} />
+        <Stack.Screen name="BodyMeasurementsScreen" component={BodyMeasurementScreen} />
         <Stack.Screen name="AchievementsPage" component={AchievementsPage} />
         <Stack.Screen name="SettingsPage" component={SettingsPage} />
 
