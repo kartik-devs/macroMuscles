@@ -59,6 +59,13 @@ export default function ShareWorkout({ navigation }) {
 
   const pickImage = async () => {
     try {
+      // Request permissions
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Required', 'Please grant photo library access to share images');
+        return;
+      }
+
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaType.Images,
         allowsEditing: true,
@@ -67,6 +74,7 @@ export default function ShareWorkout({ navigation }) {
       });
 
       if (!result.canceled) {
+        console.log('Image picked:', result.assets[0]);
         setSelectedImage(result.assets[0]);
       }
     } catch (error) {
@@ -77,6 +85,13 @@ export default function ShareWorkout({ navigation }) {
 
   const takePhoto = async () => {
     try {
+      // Request permissions
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Required', 'Please grant camera access to take photos');
+        return;
+      }
+
       const result = await ImagePicker.launchCameraAsync({
         allowsEditing: true,
         aspect: [4, 3],
@@ -84,6 +99,7 @@ export default function ShareWorkout({ navigation }) {
       });
 
       if (!result.canceled) {
+        console.log('Photo taken:', result.assets[0]);
         setSelectedImage(result.assets[0]);
       }
     } catch (error) {
