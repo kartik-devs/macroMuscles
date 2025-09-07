@@ -36,16 +36,8 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-// Configure multer for image uploads
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, 'uploads/');
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
+// Configure multer for image uploads (memory storage for cloud deployment)
+const storage = multer.memoryStorage();
 
 const upload = multer({ 
   storage: storage,
@@ -61,8 +53,16 @@ const upload = multer({
   }
 });
 
-// Serve uploaded images
-app.use('/uploads', express.static('uploads'));
+// Error handling middleware for multer
+app.use((error, req, res, next) => {
+  if (error instanceof multer.MulterError) {
+    if (error.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({ message: 'File too large. Maximum size is 5MB.' });
+    }
+    return res.status(400).json({ message: 'File upload error: ' + error.message });
+  }
+  next(error);
+});
 
 // Connect to MongoDB
 mongoose.connect(MONGODB_URI)
@@ -725,6 +725,7 @@ app.get('/api/friends/:userId', authenticateToken, async (req, res) => {
 
 // Social Routes
 // Share a workout
+// Share a workout with error handling for image uploads
 app.post('/api/social/share', authenticateToken, upload.single('image'), async (req, res) => {
   try {
     const { user_id, workout_id, caption, visibility } = req.body;
@@ -747,9 +748,16 @@ app.post('/api/social/share', authenticateToken, upload.single('image'), async (
       visibility: visibility || 'friends'
     };
     
-    // Add image URL if image was uploaded
+    // Add image as base64 if image was uploaded
     if (req.file) {
-      sharedWorkoutData.image_url = `/uploads/${req.file.filename}`;
+      try {
+        const base64Image = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+        sharedWorkoutData.image_url = base64Image;
+        console.log('Image uploaded successfully, size:', req.file.size);
+      } catch (imageError) {
+        console.error('Error processing image:', imageError);
+        return res.status(400).json({ message: 'Error processing image' });
+      }
     }
     
     const sharedWorkout = new SharedWorkout(sharedWorkoutData);

@@ -18,7 +18,8 @@ const sharedWorkoutSchema = new mongoose.Schema({
   },
   image_url: {
     type: String,
-    default: null
+    default: null,
+    maxlength: 10000000 // Allow large base64 strings
   },
   visibility: {
     type: String,
