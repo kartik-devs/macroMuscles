@@ -69,6 +69,9 @@ export const shareWorkout = async (userId, workoutId, caption, visibility = 'fri
   try {
     const headers = await getAuthHeaders();
     
+    console.log('Sharing workout with image:', !!image);
+    console.log('Image details:', image ? { uri: image.uri, type: image.type, fileName: image.fileName } : 'No image');
+    
     // If there's an image, use FormData for multipart upload
     if (image) {
       const formData = new FormData();
@@ -82,6 +85,8 @@ export const shareWorkout = async (userId, workoutId, caption, visibility = 'fri
         name: image.fileName || 'workout_image.jpg'
       });
       
+      console.log('Sending FormData with image');
+      
       const response = await axios.post(`${API_URL}/social/share`, formData, {
         headers: {
           ...headers,
@@ -91,6 +96,7 @@ export const shareWorkout = async (userId, workoutId, caption, visibility = 'fri
       return response.data;
     } else {
       // Regular JSON request without image
+      console.log('Sending JSON request without image');
       const response = await axios.post(`${API_URL}/social/share`, {
         user_id: userId,
         workout_id: workoutId,
@@ -100,6 +106,9 @@ export const shareWorkout = async (userId, workoutId, caption, visibility = 'fri
       return response.data;
     }
   } catch (error) {
+    console.error('Error in shareWorkout:', error);
+    console.error('Error response:', error.response?.data);
+    console.error('Error status:', error.response?.status);
     throw error.response ? error.response.data : { message: 'Network error' };
   }
 };

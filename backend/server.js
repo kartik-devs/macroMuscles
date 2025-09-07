@@ -728,15 +728,26 @@ app.get('/api/friends/:userId', authenticateToken, async (req, res) => {
 // Share a workout with error handling for image uploads
 app.post('/api/social/share', authenticateToken, upload.single('image'), async (req, res) => {
   try {
+    console.log('Share workout request received');
+    console.log('Request body:', req.body);
+    console.log('Request file:', req.file ? { 
+      fieldname: req.file.fieldname, 
+      originalname: req.file.originalname, 
+      mimetype: req.file.mimetype, 
+      size: req.file.size 
+    } : 'No file');
+    
     const { user_id, workout_id, caption, visibility } = req.body;
     
     if (!user_id || !workout_id) {
+      console.log('Missing required fields:', { user_id, workout_id });
       return res.status(400).json({ message: 'User ID and workout ID are required' });
     }
     
     // Check if workout exists
     const workout = await WorkoutHistory.findById(workout_id);
     if (!workout) {
+      console.log('Workout not found:', workout_id);
       return res.status(404).json({ message: 'Workout not found' });
     }
     
@@ -763,6 +774,7 @@ app.post('/api/social/share', authenticateToken, upload.single('image'), async (
     const sharedWorkout = new SharedWorkout(sharedWorkoutData);
     await sharedWorkout.save();
     
+    console.log('Workout shared successfully:', sharedWorkout._id);
     res.status(201).json({ 
       message: 'Workout shared successfully',
       id: sharedWorkout._id

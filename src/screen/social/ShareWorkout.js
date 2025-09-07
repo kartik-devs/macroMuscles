@@ -118,6 +118,22 @@ export default function ShareWorkout({ navigation }) {
     try {
       setSharing(true);
       const workoutId = selectedWorkout.id || selectedWorkout._id;
+      
+      console.log('About to share workout:', {
+        userId,
+        workoutId,
+        caption: caption.trim(),
+        visibility,
+        hasImage: !!selectedImage,
+        imageDetails: selectedImage ? {
+          uri: selectedImage.uri,
+          type: selectedImage.type,
+          fileName: selectedImage.fileName,
+          width: selectedImage.width,
+          height: selectedImage.height
+        } : null
+      });
+      
       await shareWorkout(userId, workoutId, caption.trim(), visibility, selectedImage);
       
       Alert.alert('Success', 'Workout shared successfully!', [
