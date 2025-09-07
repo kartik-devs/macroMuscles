@@ -28,7 +28,6 @@ export default function ShareWorkout({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [sharing, setSharing] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
-  const [showWorkoutDetails, setShowWorkoutDetails] = useState(false);
 
   useEffect(() => {
     loadUserData();
@@ -219,7 +218,7 @@ export default function ShareWorkout({ navigation }) {
         <View style={{ width: 24 }} />
       </View>
 
-      <View style={styles.content}>
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <Text style={styles.sectionTitle}>Select a Workout</Text>
         
         <FlatList
@@ -228,6 +227,7 @@ export default function ShareWorkout({ navigation }) {
           keyExtractor={item => (item.id || item._id || Math.random()).toString()}
           contentContainerStyle={styles.workoutList}
           showsVerticalScrollIndicator={false}
+          scrollEnabled={false}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
               <Ionicons name="fitness-outline" size={64} color="#ccc" />
@@ -241,46 +241,30 @@ export default function ShareWorkout({ navigation }) {
 
         {selectedWorkout && (
           <>
-            {/* Workout Details Toggle */}
-            <TouchableOpacity 
-              style={styles.detailsToggle}
-              onPress={() => setShowWorkoutDetails(!showWorkoutDetails)}
-            >
-              <Text style={styles.detailsToggleText}>
-                {showWorkoutDetails ? 'Hide' : 'Show'} Workout Details
-              </Text>
-              <Ionicons 
-                name={showWorkoutDetails ? "chevron-up" : "chevron-down"} 
-                size={20} 
-                color="#E53935" 
-              />
-            </TouchableOpacity>
-
-            {showWorkoutDetails && (
-              <View style={styles.workoutDetails}>
-                <Text style={styles.detailsTitle}>Workout Summary</Text>
-                <View style={styles.detailsGrid}>
-                  <View style={styles.detailItem}>
-                    <Text style={styles.detailLabel}>Duration</Text>
-                    <Text style={styles.detailValue}>{selectedWorkout.duration || 0} min</Text>
-                  </View>
-                  <View style={styles.detailItem}>
-                    <Text style={styles.detailLabel}>Calories</Text>
-                    <Text style={styles.detailValue}>{selectedWorkout.calories_burned || 0}</Text>
-                  </View>
-                  <View style={styles.detailItem}>
-                    <Text style={styles.detailLabel}>Date</Text>
-                    <Text style={styles.detailValue}>
-                      {new Date(selectedWorkout.completed_at || selectedWorkout.date).toLocaleDateString()}
-                    </Text>
-                  </View>
-                  <View style={styles.detailItem}>
-                    <Text style={styles.detailLabel}>Type</Text>
-                    <Text style={styles.detailValue}>{selectedWorkout.workout_type}</Text>
-                  </View>
+            {/* Workout Details - Always Visible */}
+            <View style={styles.workoutDetails}>
+              <Text style={styles.detailsTitle}>Workout Summary</Text>
+              <View style={styles.detailsGrid}>
+                <View style={styles.detailItem}>
+                  <Text style={styles.detailLabel}>Duration</Text>
+                  <Text style={styles.detailValue}>{selectedWorkout.duration || 0} min</Text>
+                </View>
+                <View style={styles.detailItem}>
+                  <Text style={styles.detailLabel}>Calories</Text>
+                  <Text style={styles.detailValue}>{selectedWorkout.calories_burned || 0}</Text>
+                </View>
+                <View style={styles.detailItem}>
+                  <Text style={styles.detailLabel}>Date</Text>
+                  <Text style={styles.detailValue}>
+                    {new Date(selectedWorkout.completed_at || selectedWorkout.date).toLocaleDateString()}
+                  </Text>
+                </View>
+                <View style={styles.detailItem}>
+                  <Text style={styles.detailLabel}>Type</Text>
+                  <Text style={styles.detailValue}>{selectedWorkout.workout_type}</Text>
                 </View>
               </View>
-            )}
+            </View>
 
             {/* Photo Section */}
             <Text style={styles.sectionTitle}>Add Photo (Optional)</Text>
@@ -343,7 +327,7 @@ export default function ShareWorkout({ navigation }) {
             </TouchableOpacity>
           </>
         )}
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -370,20 +354,6 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     padding: 15,
-  },
-  detailsToggle: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#f8f9fa',
-    padding: 15,
-    borderRadius: 8,
-    marginVertical: 10,
-  },
-  detailsToggleText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#E53935',
   },
   workoutDetails: {
     backgroundColor: '#f8f9fa',
