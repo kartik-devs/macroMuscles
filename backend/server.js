@@ -45,9 +45,11 @@ const upload = multer({
     fileSize: 5 * 1024 * 1024 // 5MB limit
   },
   fileFilter: function (req, file, cb) {
+    console.log('File filter - mimetype:', file.mimetype);
     if (file.mimetype.startsWith('image/')) {
       cb(null, true);
     } else {
+      console.log('File rejected - not an image');
       cb(new Error('Only image files are allowed!'), false);
     }
   }
@@ -55,6 +57,7 @@ const upload = multer({
 
 // Error handling middleware for multer
 app.use((error, req, res, next) => {
+  console.log('Multer error middleware triggered:', error);
   if (error instanceof multer.MulterError) {
     if (error.code === 'LIMIT_FILE_SIZE') {
       return res.status(400).json({ message: 'File too large. Maximum size is 5MB.' });
@@ -723,12 +726,10 @@ app.get('/api/friends/:userId', authenticateToken, async (req, res) => {
   }
 });
 
-// Social Routes
-// Share a workout
-// Share a workout with error handling for image uploads
-app.post('/api/social/share', authenticateToken, upload.single('image'), async (req, res) => {
+// Test endpoint for image upload
+app.post('/api/test/upload', upload.single('image'), (req, res) => {
   try {
-    console.log('Share workout request received');
+    console.log('Test upload endpoint hit');
     console.log('Request body:', req.body);
     console.log('Request file:', req.file ? { 
       fieldname: req.file.fieldname, 
@@ -737,7 +738,34 @@ app.post('/api/social/share', authenticateToken, upload.single('image'), async (
       size: req.file.size 
     } : 'No file');
     
-    const { user_id, workout_id, caption, visibility } = req.body;
+    if (req.file) {
+      res.json({ 
+        message: 'Image received successfully',
+        fileInfo: {
+          name: req.file.originalname,
+          size: req.file.size,
+          mimetype: req.file.mimetype
+        }
+      });
+    } else {
+      res.json({ message: 'No image received' });
+    }
+  } catch (error) {
+    console.error('Test upload error:', error);
+    res.status(500).json({ message: 'Test upload failed' });
+  }
+});
+
+// Social Routes
+// Share a workout
+// Share a workout with base64 image support
+app.post('/api/social/share', authenticateToken, async (req, res) => {
+  try {
+    console.log('Share workout request received');
+    console.log('Request body keys:', Object.keys(req.body));
+    console.log('Has image_base64:', !!req.body.image_base64);
+    
+    const { user_id, workout_id, caption, visibility, image_base64, image_type } = req.body;
     
     if (!user_id || !workout_id) {
       console.log('Missing required fields:', { user_id, workout_id });
@@ -759,14 +787,13 @@ app.post('/api/social/share', authenticateToken, upload.single('image'), async (
       visibility: visibility || 'friends'
     };
     
-    // Add image as base64 if image was uploaded
-    if (req.file) {
+    // Add image as base64 if image was provided
+    if (image_base64) {
       try {
-        const base64Image = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
-        sharedWorkoutData.image_url = base64Image;
-        console.log('Image uploaded successfully, size:', req.file.size);
+        sharedWorkoutData.image_url = image_base64;
+        console.log('Base64 image received, length:', image_base64.length);
       } catch (imageError) {
-        console.error('Error processing image:', imageError);
+        console.error('Error processing base64 image:', imageError);
         return res.status(400).json({ message: 'Error processing image' });
       }
     }

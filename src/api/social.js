@@ -72,28 +72,41 @@ export const shareWorkout = async (userId, workoutId, caption, visibility = 'fri
     console.log('Sharing workout with image:', !!image);
     console.log('Image details:', image ? { uri: image.uri, type: image.type, fileName: image.fileName } : 'No image');
     
-    // If there's an image, use FormData for multipart upload
+    // If there's an image, convert to base64 and send as JSON
     if (image) {
-      const formData = new FormData();
-      formData.append('user_id', userId);
-      formData.append('workout_id', workoutId);
-      formData.append('caption', caption);
-      formData.append('visibility', visibility);
-      formData.append('image', {
-        uri: image.uri,
-        type: image.type || 'image/jpeg',
-        name: image.fileName || 'workout_image.jpg'
-      });
-      
-      console.log('Sending FormData with image');
-      
-      const response = await axios.post(`${API_URL}/social/share`, formData, {
-        headers: {
-          ...headers,
-          'Content-Type': 'multipart/form-data'
-        }
-      });
-      return response.data;
+      try {
+        // Convert image to base64
+        const response = await fetch(image.uri);
+        const blob = await response.blob();
+        
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = async () => {
+            const base64 = reader.result;
+            console.log('Image converted to base64, length:', base64.length);
+            
+            try {
+              const response = await axios.post(`${API_URL}/social/share`, {
+                user_id: userId,
+                workout_id: workoutId,
+                caption,
+                visibility,
+                image_base64: base64,
+                image_type: image.type || 'image/jpeg'
+              }, { headers });
+              resolve(response.data);
+            } catch (error) {
+              console.error('Error sending base64 image:', error);
+              reject(error.response ? error.response.data : { message: 'Network error' });
+            }
+          };
+          reader.onerror = () => reject(new Error('Failed to convert image to base64'));
+          reader.readAsDataURL(blob);
+        });
+      } catch (conversionError) {
+        console.error('Error converting image to base64:', conversionError);
+        throw new Error('Failed to process image');
+      }
     } else {
       // Regular JSON request without image
       console.log('Sending JSON request without image');
