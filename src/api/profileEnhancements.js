@@ -42,16 +42,16 @@ export const getUserBadges = async (userId) => {
     }
     // Return default badges if API not available
     return [
-      { id: 1, name: 'First Workout', description: 'Complete your first workout', icon: '🏆' },
-      { id: 2, name: 'Consistency', description: 'Work out 3 days in a row', icon: '🔥' },
-      { id: 3, name: 'Strength', description: 'Lift 100kg total', icon: '💪' }
+      { id: 1, name: 'First Workout', description: 'Complete your first workout', icon: 'trophy' },
+      { id: 2, name: 'Consistency', description: 'Work out 3 days in a row', icon: 'flame' },
+      { id: 3, name: 'Strength', description: 'Lift 100kg total', icon: 'barbell' }
     ];
   } catch (error) {
     console.log('Error fetching user badges:', error);
     return [
-      { id: 1, name: 'First Workout', description: 'Complete your first workout', icon: '🏆' },
-      { id: 2, name: 'Consistency', description: 'Work out 3 days in a row', icon: '🔥' },
-      { id: 3, name: 'Strength', description: 'Lift 100kg total', icon: '💪' }
+      { id: 1, name: 'First Workout', description: 'Complete your first workout', icon: 'trophy' },
+      { id: 2, name: 'Consistency', description: 'Work out 3 days in a row', icon: 'flame' },
+      { id: 3, name: 'Strength', description: 'Lift 100kg total', icon: 'barbell' }
     ];
   }
 };

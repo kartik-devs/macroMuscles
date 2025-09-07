@@ -1,6 +1,7 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL } from './config';
+import { resetToLogin } from '../navigation/navigationRef';
 
 // Helper to get token
 export const getToken = async () => {
@@ -20,6 +21,25 @@ export const initAuth = async () => {
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     } else {
       delete axios.defaults.headers.common['Authorization'];
+    }
+    // Install a single interceptor (idempotent guard)
+    if (!axios.__installedAuthInterceptor) {
+      axios.interceptors.response.use(
+        (response) => response,
+        async (error) => {
+          const status = error?.response?.status;
+          const message = error?.response?.data?.message || '';
+          if (status === 401 || status === 403 || message.includes('Invalid Token')) {
+            try {
+              await AsyncStorage.multiRemove(['token', 'userData']);
+              delete axios.defaults.headers.common['Authorization'];
+            } catch {}
+            resetToLogin();
+          }
+          return Promise.reject(error);
+        }
+      );
+      axios.__installedAuthInterceptor = true;
     }
   } catch {}
 };

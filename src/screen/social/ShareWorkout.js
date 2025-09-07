@@ -9,9 +9,12 @@ import {
   Alert,
   SafeAreaView,
   StatusBar,
-  ActivityIndicator
+  ActivityIndicator,
+  Image,
+  ScrollView
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import { shareWorkout } from '../../api/social';
 import { getWorkoutHistory } from '../../api/profile';
 import { getCurrentUserId } from '../../api/auth';
@@ -24,6 +27,8 @@ export default function ShareWorkout({ navigation }) {
   const [visibility, setVisibility] = useState('friends');
   const [loading, setLoading] = useState(true);
   const [sharing, setSharing] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [showWorkoutDetails, setShowWorkoutDetails] = useState(false);
 
   useEffect(() => {
     loadUserData();
@@ -53,6 +58,53 @@ export default function ShareWorkout({ navigation }) {
     }
   };
 
+  const pickImage = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaType.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.8,
+      });
+
+      if (!result.canceled) {
+        setSelectedImage(result.assets[0]);
+      }
+    } catch (error) {
+      console.error('Error picking image:', error);
+      Alert.alert('Error', 'Failed to pick image');
+    }
+  };
+
+  const takePhoto = async () => {
+    try {
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.8,
+      });
+
+      if (!result.canceled) {
+        setSelectedImage(result.assets[0]);
+      }
+    } catch (error) {
+      console.error('Error taking photo:', error);
+      Alert.alert('Error', 'Failed to take photo');
+    }
+  };
+
+  const showImageOptions = () => {
+    Alert.alert(
+      'Add Photo',
+      'Choose how you want to add a photo',
+      [
+        { text: 'Camera', onPress: takePhoto },
+        { text: 'Photo Library', onPress: pickImage },
+        { text: 'Cancel', style: 'cancel' }
+      ]
+    );
+  };
+
   const handleShare = async () => {
     if (!selectedWorkout) {
       Alert.alert('Error', 'Please select a workout to share');
@@ -66,7 +118,8 @@ export default function ShareWorkout({ navigation }) {
 
     try {
       setSharing(true);
-      await shareWorkout(userId, selectedWorkout.id, caption.trim(), visibility);
+      const workoutId = selectedWorkout.id || selectedWorkout._id;
+      await shareWorkout(userId, workoutId, caption.trim(), visibility, selectedImage);
       
       Alert.alert('Success', 'Workout shared successfully!', [
         { text: 'OK', onPress: () => navigation.goBack() }
@@ -80,8 +133,11 @@ export default function ShareWorkout({ navigation }) {
   };
 
   const renderWorkoutItem = ({ item }) => {
-    const isSelected = selectedWorkout && selectedWorkout.id === item.id;
-    const formattedDate = new Date(item.completed_at).toLocaleDateString();
+    if (!item) return null;
+    
+    const itemId = item.id || item._id;
+    const isSelected = selectedWorkout && (selectedWorkout.id === itemId || selectedWorkout._id === itemId);
+    const formattedDate = item.completed_at ? new Date(item.completed_at).toLocaleDateString() : 'Unknown date';
     
     return (
       <TouchableOpacity
@@ -96,12 +152,18 @@ export default function ShareWorkout({ navigation }) {
         <View style={styles.workoutStats}>
           <View style={styles.statItem}>
             <Ionicons name="time-outline" size={16} color="#666" />
-            <Text style={styles.statText}>{item.duration} min</Text>
+            <Text style={styles.statText}>{item.duration || 0} min</Text>
           </View>
           <View style={styles.statItem}>
             <Ionicons name="flame-outline" size={16} color="#666" />
-            <Text style={styles.statText}>{item.calories_burned} cal</Text>
+            <Text style={styles.statText}>{item.calories_burned || 0} cal</Text>
           </View>
+          {item.exercises && (
+            <View style={styles.statItem}>
+              <Ionicons name="barbell-outline" size={16} color="#666" />
+              <Text style={styles.statText}>{item.exercises.length} exercises</Text>
+            </View>
+          )}
         </View>
         
         {isSelected && (
@@ -163,7 +225,7 @@ export default function ShareWorkout({ navigation }) {
         <FlatList
           data={workouts}
           renderItem={renderWorkoutItem}
-          keyExtractor={item => item.id.toString()}
+          keyExtractor={item => (item.id || item._id || Math.random()).toString()}
           contentContainerStyle={styles.workoutList}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
@@ -179,6 +241,68 @@ export default function ShareWorkout({ navigation }) {
 
         {selectedWorkout && (
           <>
+            {/* Workout Details Toggle */}
+            <TouchableOpacity 
+              style={styles.detailsToggle}
+              onPress={() => setShowWorkoutDetails(!showWorkoutDetails)}
+            >
+              <Text style={styles.detailsToggleText}>
+                {showWorkoutDetails ? 'Hide' : 'Show'} Workout Details
+              </Text>
+              <Ionicons 
+                name={showWorkoutDetails ? "chevron-up" : "chevron-down"} 
+                size={20} 
+                color="#E53935" 
+              />
+            </TouchableOpacity>
+
+            {showWorkoutDetails && (
+              <View style={styles.workoutDetails}>
+                <Text style={styles.detailsTitle}>Workout Summary</Text>
+                <View style={styles.detailsGrid}>
+                  <View style={styles.detailItem}>
+                    <Text style={styles.detailLabel}>Duration</Text>
+                    <Text style={styles.detailValue}>{selectedWorkout.duration || 0} min</Text>
+                  </View>
+                  <View style={styles.detailItem}>
+                    <Text style={styles.detailLabel}>Calories</Text>
+                    <Text style={styles.detailValue}>{selectedWorkout.calories_burned || 0}</Text>
+                  </View>
+                  <View style={styles.detailItem}>
+                    <Text style={styles.detailLabel}>Date</Text>
+                    <Text style={styles.detailValue}>
+                      {new Date(selectedWorkout.completed_at || selectedWorkout.date).toLocaleDateString()}
+                    </Text>
+                  </View>
+                  <View style={styles.detailItem}>
+                    <Text style={styles.detailLabel}>Type</Text>
+                    <Text style={styles.detailValue}>{selectedWorkout.workout_type}</Text>
+                  </View>
+                </View>
+              </View>
+            )}
+
+            {/* Photo Section */}
+            <Text style={styles.sectionTitle}>Add Photo (Optional)</Text>
+            <View style={styles.photoSection}>
+              {selectedImage ? (
+                <View style={styles.selectedImageContainer}>
+                  <Image source={{ uri: selectedImage.uri }} style={styles.selectedImage} />
+                  <TouchableOpacity 
+                    style={styles.removeImageButton}
+                    onPress={() => setSelectedImage(null)}
+                  >
+                    <Ionicons name="close-circle" size={24} color="#e74c3c" />
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <TouchableOpacity style={styles.addPhotoButton} onPress={showImageOptions}>
+                  <Ionicons name="camera" size={32} color="#E53935" />
+                  <Text style={styles.addPhotoText}>Add Photo</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
             <Text style={styles.sectionTitle}>Caption</Text>
             <TextInput
               style={styles.captionInput}
@@ -246,6 +370,90 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     padding: 15,
+  },
+  detailsToggle: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
+    padding: 15,
+    borderRadius: 8,
+    marginVertical: 10,
+  },
+  detailsToggleText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#E53935',
+  },
+  workoutDetails: {
+    backgroundColor: '#f8f9fa',
+    borderRadius: 12,
+    padding: 15,
+    marginBottom: 15,
+  },
+  detailsTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 12,
+  },
+  detailsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  detailItem: {
+    width: '48%',
+    backgroundColor: '#fff',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  detailLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 4,
+  },
+  detailValue: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  photoSection: {
+    marginBottom: 20,
+  },
+  selectedImageContainer: {
+    position: 'relative',
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  selectedImage: {
+    width: '100%',
+    height: 200,
+    borderRadius: 12,
+  },
+  removeImageButton: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+  },
+  addPhotoButton: {
+    backgroundColor: '#f8f9fa',
+    borderWidth: 2,
+    borderColor: '#E53935',
+    borderStyle: 'dashed',
+    borderRadius: 12,
+    padding: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addPhotoText: {
+    marginTop: 8,
+    fontSize: 16,
+    color: '#E53935',
+    fontWeight: '600',
   },
   sectionTitle: {
     fontSize: 16,

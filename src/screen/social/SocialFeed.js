@@ -152,32 +152,58 @@ export default function SocialFeed({ navigation }) {
 
   const renderFeedItem = ({ item }) => {
     const formattedDate = new Date(item.created_at).toLocaleDateString();
+    const timeAgo = getTimeAgo(new Date(item.created_at));
     const isCommenting = activeCommentPost === item.id;
     
     return (
       <View style={styles.postCard}>
+        {/* Enhanced Header */}
         <View style={styles.postHeader}>
           <TouchableOpacity 
             style={styles.userInfo}
             onPress={() => viewProfile(item.user_id)}
           >
             <View style={styles.avatar}>
-              <Text style={styles.avatarText}>{item.user_name.charAt(0)}</Text>
+              <Text style={styles.avatarText}>{item.user_name.charAt(0).toUpperCase()}</Text>
             </View>
-            <View>
+            <View style={styles.userDetails}>
               <Text style={styles.userName}>{item.user_name}</Text>
-              <Text style={styles.postDate}>{formattedDate}</Text>
+              <Text style={styles.postDate}>{timeAgo}</Text>
             </View>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.moreButton}>
+            <Ionicons name="ellipsis-horizontal" size={20} color="#666" />
           </TouchableOpacity>
         </View>
         
+        {/* Enhanced Content */}
         <View style={styles.postContent}>
           {item.caption ? (
             <Text style={styles.caption}>{item.caption}</Text>
           ) : null}
           
-          <View style={styles.workoutInfo}>
-            <Text style={styles.workoutType}>{item.workout_type}</Text>
+          {/* Post Image */}
+          {item.image_url && (
+            <View style={styles.postImageContainer}>
+              <Image 
+                source={{ uri: item.image_url }} 
+                style={styles.postImage}
+                resizeMode="cover"
+              />
+            </View>
+          )}
+          
+          <View style={styles.workoutCard}>
+            <View style={styles.workoutHeader}>
+              <View style={styles.workoutTypeContainer}>
+                <Ionicons name="fitness" size={18} color="#E53935" />
+                <Text style={styles.workoutType}>{item.workout_type}</Text>
+              </View>
+              <View style={styles.workoutBadge}>
+                <Text style={styles.workoutBadgeText}>WORKOUT</Text>
+              </View>
+            </View>
+            
             <View style={styles.workoutStats}>
               <View style={styles.statItem}>
                 <Ionicons name="time-outline" size={16} color="#666" />
@@ -187,13 +213,18 @@ export default function SocialFeed({ navigation }) {
                 <Ionicons name="flame-outline" size={16} color="#666" />
                 <Text style={styles.statText}>{item.calories_burned} cal</Text>
               </View>
+              <View style={styles.statItem}>
+                <Ionicons name="trophy-outline" size={16} color="#666" />
+                <Text style={styles.statText}>Completed</Text>
+              </View>
             </View>
           </View>
         </View>
         
+        {/* Enhanced Actions */}
         <View style={styles.postActions}>
           <TouchableOpacity 
-            style={styles.actionButton}
+            style={[styles.actionButton, item.user_liked && styles.likedButton]}
             onPress={() => handleLike(item)}
           >
             <Ionicons 
@@ -201,8 +232,8 @@ export default function SocialFeed({ navigation }) {
               size={22} 
               color={item.user_liked ? "#e91e63" : "#666"} 
             />
-            <Text style={styles.actionText}>
-              {item.likes_count} {item.likes_count === 1 ? 'Like' : 'Likes'}
+            <Text style={[styles.actionText, item.user_liked && styles.likedText]}>
+              {item.likes_count || 0}
             </Text>
           </TouchableOpacity>
           
@@ -217,20 +248,19 @@ export default function SocialFeed({ navigation }) {
             }}
           >
             <Ionicons name="chatbubble-outline" size={22} color="#666" />
-            <Text style={styles.actionText}>Comment</Text>
+            <Text style={styles.actionText}>{item.comments_count || 0}</Text>
           </TouchableOpacity>
           
           <TouchableOpacity 
             style={styles.actionButton}
             onPress={() => viewComments(item)}
           >
-            <Ionicons name="chatbubbles-outline" size={22} color="#666" />
-            <Text style={styles.actionText}>
-              {item.comments_count} {item.comments_count === 1 ? 'Comment' : 'Comments'}
-            </Text>
+            <Ionicons name="share-outline" size={22} color="#666" />
+            <Text style={styles.actionText}>Share</Text>
           </TouchableOpacity>
         </View>
         
+        {/* Enhanced Comment Input */}
         {isCommenting && (
           <View style={styles.commentInput}>
             <TextInput
@@ -239,22 +269,34 @@ export default function SocialFeed({ navigation }) {
               value={commentText}
               onChangeText={setCommentText}
               multiline
+              maxLength={280}
             />
             <TouchableOpacity 
-              style={styles.sendButton}
+              style={[styles.sendButton, !commentText.trim() && styles.disabledSendButton]}
               onPress={handleComment}
               disabled={!commentText.trim()}
             >
               <Ionicons 
                 name="send" 
-                size={24} 
-                color={commentText.trim() ? "#E53935" : "#666"} 
+                size={20} 
+                color={commentText.trim() ? "#E53935" : "#ccc"} 
               />
             </TouchableOpacity>
           </View>
         )}
       </View>
     );
+  };
+
+  const getTimeAgo = (date) => {
+    const now = new Date();
+    const diffInSeconds = Math.floor((now - date) / 1000);
+    
+    if (diffInSeconds < 60) return 'Just now';
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+    if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`;
+    return date.toLocaleDateString();
   };
 
   if (loading && !refreshing) {
@@ -404,34 +446,47 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 15,
   },
   userInfo: {
     flexDirection: 'row',
     alignItems: 'center',
+    flex: 1,
   },
   avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     backgroundColor: '#E53935',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 10,
+    marginRight: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   avatarText: {
     color: '#fff',
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
+  },
+  userDetails: {
+    flex: 1,
   },
   userName: {
     fontSize: 16,
     fontWeight: 'bold',
     color: '#333',
+    marginBottom: 2,
   },
   postDate: {
     fontSize: 12,
     color: '#999',
+  },
+  moreButton: {
+    padding: 8,
   },
   postContent: {
     marginBottom: 15,
@@ -439,67 +494,130 @@ const styles = StyleSheet.create({
   caption: {
     fontSize: 16,
     color: '#333',
-    marginBottom: 10,
+    marginBottom: 12,
+    lineHeight: 22,
   },
-  workoutInfo: {
-    backgroundColor: '#E53935',
-    borderRadius: 8,
-    padding: 12,
+  postImageContainer: {
+    marginBottom: 12,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  postImage: {
+    width: '100%',
+    height: 200,
+    borderRadius: 12,
+  },
+  workoutCard: {
+    backgroundColor: '#f8f9fa',
+    borderRadius: 12,
+    padding: 16,
+    borderLeftWidth: 4,
+    borderLeftColor: '#E53935',
+  },
+  workoutHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  workoutTypeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   workoutType: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#333',
-    marginBottom: 8,
+    marginLeft: 8,
+  },
+  workoutBadge: {
+    backgroundColor: '#E53935',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  workoutBadgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: 'bold',
   },
   workoutStats: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
   },
   statItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginRight: 15,
+    marginRight: 20,
+    marginBottom: 8,
   },
   statText: {
-    marginLeft: 5,
+    marginLeft: 6,
     fontSize: 14,
     color: '#666',
+    fontWeight: '500',
   },
   postActions: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'space-around',
     borderTopWidth: 1,
     borderTopColor: '#eee',
     paddingTop: 12,
+    paddingHorizontal: 8,
   },
   actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    minWidth: 60,
+    justifyContent: 'center',
+  },
+  likedButton: {
+    backgroundColor: '#ffe6f0',
   },
   actionText: {
-    marginLeft: 5,
+    marginLeft: 6,
     fontSize: 14,
     color: '#666',
+    fontWeight: '500',
+  },
+  likedText: {
+    color: '#e91e63',
+    fontWeight: 'bold',
   },
   commentInput: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 10,
+    alignItems: 'flex-end',
+    marginTop: 12,
     borderTopWidth: 1,
     borderTopColor: '#eee',
-    paddingTop: 10,
+    paddingTop: 12,
+    paddingHorizontal: 4,
   },
   input: {
     flex: 1,
     backgroundColor: '#f0f2f5',
     borderRadius: 20,
-    paddingHorizontal: 15,
-    paddingVertical: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
     fontSize: 14,
+    maxHeight: 100,
+    minHeight: 40,
   },
   sendButton: {
-    marginLeft: 10,
-    padding: 5,
+    marginLeft: 8,
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: '#E53935',
+    minWidth: 36,
+    height: 36,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  disabledSendButton: {
+    backgroundColor: '#ccc',
   },
   emptyContainer: {
     alignItems: 'center',

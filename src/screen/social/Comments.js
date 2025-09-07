@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,10 +9,11 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
-  Alert
+  Alert,
+  Animated
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { getWorkoutComments, commentOnWorkout } from '../../api/social';
+import { getWorkoutComments, commentOnWorkout, likeComment, unlikeComment } from '../../api/social';
 import { getCurrentUserId } from '../../api/auth';
 
 export default function Comments({ route, navigation }) {
@@ -22,6 +23,10 @@ export default function Comments({ route, navigation }) {
   const [commentText, setCommentText] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [replyingTo, setReplyingTo] = useState(null);
+  const [showReactions, setShowReactions] = useState(null);
+  const flatListRef = useRef(null);
+  const heartAnimation = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     loadUserData();
@@ -56,14 +61,25 @@ export default function Comments({ route, navigation }) {
     
     try {
       setSending(true);
-      await commentOnWorkout(userId, sharedWorkoutId, commentText.trim());
+      const commentData = {
+        text: commentText.trim(),
+        replyTo: replyingTo?.id || null
+      };
+      
+      await commentOnWorkout(userId, sharedWorkoutId, commentData);
       
       // Refresh comments
       const newComments = await getWorkoutComments(sharedWorkoutId);
       setComments(newComments);
       
-      // Clear input
+      // Clear input and reply state
       setCommentText('');
+      setReplyingTo(null);
+      
+      // Scroll to bottom
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: true });
+      }, 100);
     } catch (error) {
       console.error('Error adding comment:', error);
       Alert.alert('Error', error.message || 'Failed to add comment');
@@ -72,9 +88,61 @@ export default function Comments({ route, navigation }) {
     }
   };
 
+  const handleLikeComment = async (commentId, isLiked) => {
+    try {
+      if (isLiked) {
+        await unlikeComment(userId, commentId);
+      } else {
+        await likeComment(userId, commentId);
+        
+        // Heart animation
+        Animated.sequence([
+          Animated.timing(heartAnimation, {
+            toValue: 1.3,
+            duration: 150,
+            useNativeDriver: true,
+          }),
+          Animated.timing(heartAnimation, {
+            toValue: 1,
+            duration: 150,
+            useNativeDriver: true,
+          }),
+        ]).start();
+      }
+      
+      // Update local state
+      setComments(prevComments => 
+        prevComments.map(comment => 
+          comment.id === commentId 
+            ? { 
+                ...comment, 
+                isLiked: !isLiked,
+                likesCount: isLiked ? comment.likesCount - 1 : comment.likesCount + 1
+              }
+            : comment
+        )
+      );
+    } catch (error) {
+      console.error('Error liking comment:', error);
+    }
+  };
+
+  const handleReply = (comment) => {
+    setReplyingTo(comment);
+    setCommentText(`@${comment.user_name} `);
+  };
+
+  const cancelReply = () => {
+    setReplyingTo(null);
+    setCommentText('');
+  };
+
   const renderCommentItem = ({ item }) => {
     const formattedDate = new Date(item.created_at).toLocaleString();
+    const timeAgo = getTimeAgo(new Date(item.created_at));
     const isCurrentUser = userId === item.user_id;
+    const isLiked = item.isLiked || false;
+    const likesCount = item.likesCount || 0;
     
     return (
       <View style={[
@@ -82,12 +150,84 @@ export default function Comments({ route, navigation }) {
         isCurrentUser ? styles.currentUserBubble : styles.otherUserBubble
       ]}>
         <View style={styles.commentHeader}>
-          <Text style={styles.userName}>{item.user_name}</Text>
-          <Text style={styles.commentDate}>{formattedDate}</Text>
+          <View style={styles.userInfo}>
+            <Text style={styles.userName}>{item.user_name}</Text>
+            <Text style={styles.commentDate}>{timeAgo}</Text>
+          </View>
+          <TouchableOpacity 
+            style={styles.moreButton}
+            onPress={() => setShowReactions(showReactions === item.id ? null : item.id)}
+          >
+            <Ionicons name="ellipsis-horizontal" size={16} color="#666" />
+          </TouchableOpacity>
         </View>
-        <Text style={styles.commentText}>{item.comment}</Text>
+        
+        {item.replyTo && (
+          <View style={styles.replyIndicator}>
+            <Ionicons name="return-up-left" size={14} color="#666" />
+            <Text style={styles.replyText}>Replying to {item.replyTo.user_name}</Text>
+          </View>
+        )}
+        
+        <Text style={styles.commentText}>{item.comment || item.text}</Text>
+        
+        <View style={styles.commentActions}>
+          <TouchableOpacity 
+            style={styles.actionButton}
+            onPress={() => handleLikeComment(item.id, isLiked)}
+          >
+            <Animated.View style={{ transform: [{ scale: heartAnimation }] }}>
+              <Ionicons 
+                name={isLiked ? "heart" : "heart-outline"} 
+                size={16} 
+                color={isLiked ? "#e91e63" : "#666"} 
+              />
+            </Animated.View>
+            {likesCount > 0 && (
+              <Text style={[styles.actionText, isLiked && styles.likedText]}>
+                {likesCount}
+              </Text>
+            )}
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.actionButton}
+            onPress={() => handleReply(item)}
+          >
+            <Ionicons name="chatbubble-outline" size={16} color="#666" />
+            <Text style={styles.actionText}>Reply</Text>
+          </TouchableOpacity>
+        </View>
+        
+        {showReactions === item.id && (
+          <View style={styles.reactionsContainer}>
+            <TouchableOpacity style={styles.reactionButton}>
+              <Text style={styles.reactionEmoji}>👍</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.reactionButton}>
+              <Text style={styles.reactionEmoji}>❤️</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.reactionButton}>
+              <Text style={styles.reactionEmoji}>😂</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.reactionButton}>
+              <Text style={styles.reactionEmoji}>🔥</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
     );
+  };
+
+  const getTimeAgo = (date) => {
+    const now = new Date();
+    const diffInSeconds = Math.floor((now - date) / 1000);
+    
+    if (diffInSeconds < 60) return 'Just now';
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+    if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`;
+    return date.toLocaleDateString();
   };
 
   return (
@@ -114,11 +254,13 @@ export default function Comments({ route, navigation }) {
         </View>
       ) : (
         <FlatList
+          ref={flatListRef}
           data={comments}
           renderItem={renderCommentItem}
-          keyExtractor={item => item.id.toString()}
+          keyExtractor={item => (item.id || item._id || Math.random()).toString()}
           contentContainerStyle={styles.commentsList}
           inverted={false}
+          showsVerticalScrollIndicator={false}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
               <Ionicons name="chatbubble-outline" size={64} color="#ccc" />
@@ -130,27 +272,46 @@ export default function Comments({ route, navigation }) {
       )}
       
       <View style={styles.inputContainer}>
-        <TextInput
-          style={styles.input}
-          placeholder="Write a comment..."
-          value={commentText}
-          onChangeText={setCommentText}
-          multiline
-        />
-        <TouchableOpacity 
-          style={[
-            styles.sendButton,
-            (!commentText.trim() || sending) && styles.disabledButton
-          ]}
-          onPress={handleAddComment}
-          disabled={!commentText.trim() || sending}
-        >
-          {sending ? (
-            <ActivityIndicator size="small" color="#fff" />
-          ) : (
-            <Ionicons name="send" size={20} color="#fff" />
-          )}
-        </TouchableOpacity>
+        {replyingTo && (
+          <View style={styles.replyBar}>
+            <View style={styles.replyInfo}>
+              <Ionicons name="return-up-left" size={16} color="#E53935" />
+              <Text style={styles.replyText}>Replying to {replyingTo.user_name}</Text>
+            </View>
+            <TouchableOpacity onPress={cancelReply}>
+              <Ionicons name="close" size={20} color="#666" />
+            </TouchableOpacity>
+          </View>
+        )}
+        
+        <View style={styles.inputRow}>
+          <TextInput
+            style={styles.input}
+            placeholder={replyingTo ? `Reply to ${replyingTo.user_name}...` : "Write a comment..."}
+            value={commentText}
+            onChangeText={setCommentText}
+            multiline
+            maxLength={500}
+          />
+          <TouchableOpacity 
+            style={[
+              styles.sendButton,
+              (!commentText.trim() || sending) && styles.disabledButton
+            ]}
+            onPress={handleAddComment}
+            disabled={!commentText.trim() || sending}
+          >
+            {sending ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Ionicons name="send" size={20} color="#fff" />
+            )}
+          </TouchableOpacity>
+        </View>
+        
+        <Text style={styles.characterCount}>
+          {commentText.length}/500
+        </Text>
       </View>
     </KeyboardAvoidingView>
   );
@@ -211,7 +372,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 5,
+    marginBottom: 8,
+  },
+  userInfo: {
+    flex: 1,
   },
   userName: {
     fontWeight: 'bold',
@@ -221,18 +385,84 @@ const styles = StyleSheet.create({
   commentDate: {
     fontSize: 12,
     color: '#666',
-    marginLeft: 5,
+    marginTop: 2,
+  },
+  moreButton: {
+    padding: 4,
+  },
+  replyIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+    paddingLeft: 8,
+  },
+  replyText: {
+    fontSize: 12,
+    color: '#666',
+    marginLeft: 4,
+    fontStyle: 'italic',
+  },
+  commentActions: {
+    flexDirection: 'row',
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,0,0,0.1)',
+  },
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 16,
+    paddingVertical: 4,
+  },
+  actionText: {
+    marginLeft: 4,
+    fontSize: 12,
+    color: '#666',
+  },
+  likedText: {
+    color: '#e91e63',
+    fontWeight: 'bold',
+  },
+  reactionsContainer: {
+    flexDirection: 'row',
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,0,0,0.1)',
+  },
+  reactionButton: {
+    marginRight: 12,
+    padding: 4,
+  },
+  reactionEmoji: {
+    fontSize: 18,
   },
   commentText: {
     fontSize: 16,
   },
   inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 10,
     backgroundColor: '#fff',
     borderTopWidth: 1,
     borderTopColor: '#eee',
+    padding: 10,
+  },
+  replyBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
+    padding: 8,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  replyInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
   },
   input: {
     flex: 1,
@@ -241,7 +471,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     paddingVertical: 10,
     maxHeight: 100,
+    minHeight: 40,
     fontSize: 16,
+    marginRight: 8,
+  },
+  characterCount: {
+    textAlign: 'right',
+    fontSize: 12,
+    color: '#999',
+    marginTop: 4,
   },
   sendButton: {
     width: 40,

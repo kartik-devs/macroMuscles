@@ -12,6 +12,7 @@ import SocialFeed from '../screen/social/SocialFeed';
 import Friends from '../screen/social/Friends';
 import ShareWorkout from '../screen/social/ShareWorkout';
 import Comments from '../screen/social/Comments';
+import UserProfile from '../screen/social/UserProfile';
 import WorkoutMain from '../screen/WorkoutMain';
 import WorkoutPreferences from '../screen/WorkoutPreferences';
 import MonthlyWorkoutPlan from '../screen/MonthlyWorkoutPlan';
@@ -44,7 +45,7 @@ function SocialStackScreen() {
       <SocialStack.Screen name="Friends" component={Friends} />
       <SocialStack.Screen name="ShareWorkout" component={ShareWorkout} />
       <SocialStack.Screen name="Comments" component={Comments} />
-      <SocialStack.Screen name="UserProfile" component={ProfilePage} />
+      <SocialStack.Screen name="UserProfile" component={UserProfile} />
       <SocialStack.Screen name="Settings" component={Settings} />
       <SocialStack.Screen name="BodyMeasurementsScreen" component={BodyMeasurementScreen} />
     </SocialStack.Navigator>

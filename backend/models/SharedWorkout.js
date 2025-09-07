@@ -16,6 +16,10 @@ const sharedWorkoutSchema = new mongoose.Schema({
     trim: true,
     maxlength: 500
   },
+  image_url: {
+    type: String,
+    default: null
+  },
   visibility: {
     type: String,
     enum: ['public', 'friends', 'private'],

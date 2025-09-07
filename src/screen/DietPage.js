@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { getCurrentUserId } from '../api/auth';
 import { saveUserProfile, getUserProfile } from '../api/profile';
+import { getDailyNutrition, saveDailyNutrition, getUserGoal } from '../api/diet';
 import { getRecommendedExercises } from './diets/data/exerciseData';
 
 const Tab = createBottomTabNavigator();
@@ -204,6 +205,54 @@ function RecommendedDietPlanScreen({ route }) {
   const [activeTab, setActiveTab] = useState('breakfast');
   const [cheatDayUnlocked, setCheatDayUnlocked] = useState(false);
 
+  // Daily nutrition state
+  const [userId, setUserId] = useState(null);
+  const [targetCalories, setTargetCalories] = useState(1900);
+  const [consumedCalories, setConsumedCalories] = useState(0);
+  const [loadingDaily, setLoadingDaily] = useState(true);
+  const todayIso = new Date().toISOString().slice(0,10);
+
+  useEffect(() => {
+    const loadDaily = async () => {
+      try {
+        const id = await getCurrentUserId();
+        setUserId(id);
+        if (id) {
+          try {
+            const goal = await getUserGoal(id);
+            if (goal && goal.target_calories) setTargetCalories(goal.target_calories);
+          } catch {}
+          try {
+            const daily = await getDailyNutrition(id, todayIso);
+            if (daily && typeof daily.consumed_calories === 'number') {
+              setConsumedCalories(daily.consumed_calories);
+            }
+            if (daily && daily.target_calories) setTargetCalories(daily.target_calories);
+          } catch {}
+        }
+      } finally {
+        setLoadingDaily(false);
+      }
+    };
+    loadDaily();
+  }, []);
+
+  const addCalories = async (amount) => {
+    if (!userId) return;
+    const next = Math.max(0, consumedCalories + amount);
+    setConsumedCalories(next);
+    try {
+      await saveDailyNutrition({
+        user_id: userId,
+        date: todayIso,
+        target_calories: targetCalories,
+        consumed_calories: next,
+      });
+    } catch (e) {
+      // optimistic update; optionally roll back
+    }
+  };
+
   // Add default values to prevent undefined errors
   const defaultDietPreference = dietPreference || 'maintenance';
   const defaultWorkoutSplit = workoutSplit || 'push_pull_legs';
@@ -387,6 +436,32 @@ function RecommendedDietPlanScreen({ route }) {
         <Text style={styles.planSubtitle}>
           Based on your {defaultDietPreference.replace('_', ' ')} preference and {defaultWorkoutSplit.replace('_', ' ')} split
         </Text>
+      </View>
+
+      {/* Daily Summary */}
+      <View style={styles.sectionContainer}>
+        <Text style={styles.sectionTitle}>Today</Text>
+        {loadingDaily ? (
+          <Text style={styles.sectionSubtitle}>Loading daily nutrition...</Text>
+        ) : (
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <View>
+              <Text style={{ fontSize: 16, fontWeight: '700', color: '#1a1a1a' }}>{consumedCalories} / {targetCalories} cal</Text>
+              <Text style={{ fontSize: 12, color: '#666', marginTop: 4 }}>Remaining: {Math.max(0, targetCalories - consumedCalories)} cal</Text>
+            </View>
+            <View style={{ flexDirection: 'row' }}>
+              <TouchableOpacity style={styles.quickAddButton} onPress={() => addCalories(100)}>
+                <Text style={styles.quickAddText}>+100</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.quickAddButton} onPress={() => addCalories(200)}>
+                <Text style={styles.quickAddText}>+200</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.quickAddButton} onPress={() => addCalories(300)}>
+                <Text style={styles.quickAddText}>+300</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
       </View>
 
       {/* Tab Navigation */}
@@ -614,13 +689,18 @@ function PopularDietPlansScreen({ navigation }) {
 export default function DietPage({ navigation }) {
   return (
     <Tab.Navigator
-      screenOptions={({ route }) => ({
+      screenOptions={({ route, navigation: nav }) => ({
+        headerShown: true,
+        headerTitle: route.name === 'PopularDietPlans' ? 'Diet Plans' : route.name === 'RecommendedDietPlan' ? 'Your Plan' : route.name,
+        headerRight: () => (
+          <TouchableOpacity style={{ paddingHorizontal: 12 }} onPress={() => navigation.navigate('SettingsPage')}>
+            <Ionicons name="settings-outline" size={22} color="#1a1a1a" />
+          </TouchableOpacity>
+        ),
         tabBarIcon: ({ focused, color, size }) => {
           let iconName;
           if (route.name === 'PopularDietPlans') {
             iconName = focused ? 'list' : 'list-outline';
-          } else if (route.name === 'Preferences') {
-            iconName = focused ? 'settings' : 'settings-outline';
           } else if (route.name === 'RecommendedDietPlan') {
             iconName = focused ? 'restaurant' : 'restaurant-outline';
           }
@@ -643,7 +723,6 @@ export default function DietPage({ navigation }) {
       })}
     >
       <Tab.Screen name="PopularDietPlans" component={PopularDietPlansScreen} />
-      <Tab.Screen name="Preferences" component={UserPreferencesScreen} />
       <Tab.Screen name="RecommendedDietPlan" component={RecommendedDietPlanScreen} />
     </Tab.Navigator>
   );
@@ -680,6 +759,17 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
+  },
+  quickAddButton: {
+    backgroundColor: '#E53935',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginLeft: 8,
+  },
+  quickAddText: {
+    color: '#fff',
+    fontWeight: '700',
   },
   sectionTitle: {
     fontSize: 20,

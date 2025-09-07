@@ -65,16 +65,40 @@ export const getFriends = async (userId) => {
 };
 
 // Share a workout
-export const shareWorkout = async (userId, workoutId, caption, visibility = 'friends') => {
+export const shareWorkout = async (userId, workoutId, caption, visibility = 'friends', image = null) => {
   try {
     const headers = await getAuthHeaders();
-    const response = await axios.post(`${API_URL}/social/share`, {
-      user_id: userId,
-      workout_id: workoutId,
-      caption,
-      visibility
-    }, { headers });
-    return response.data;
+    
+    // If there's an image, use FormData for multipart upload
+    if (image) {
+      const formData = new FormData();
+      formData.append('user_id', userId);
+      formData.append('workout_id', workoutId);
+      formData.append('caption', caption);
+      formData.append('visibility', visibility);
+      formData.append('image', {
+        uri: image.uri,
+        type: image.type || 'image/jpeg',
+        name: image.fileName || 'workout_image.jpg'
+      });
+      
+      const response = await axios.post(`${API_URL}/social/share`, formData, {
+        headers: {
+          ...headers,
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      return response.data;
+    } else {
+      // Regular JSON request without image
+      const response = await axios.post(`${API_URL}/social/share`, {
+        user_id: userId,
+        workout_id: workoutId,
+        caption,
+        visibility
+      }, { headers });
+      return response.data;
+    }
   } catch (error) {
     throw error.response ? error.response.data : { message: 'Network error' };
   }
@@ -142,6 +166,90 @@ export const getWorkoutComments = async (sharedWorkoutId) => {
   try {
     const headers = await getAuthHeaders();
     const response = await axios.get(`${API_URL}/social/comments/${sharedWorkoutId}`, { headers });
+    return response.data;
+  } catch (error) {
+    throw error.response ? error.response.data : { message: 'Network error' };
+  }
+};
+
+// Like a comment
+export const likeComment = async (userId, commentId) => {
+  try {
+    const headers = await getAuthHeaders();
+    const response = await axios.post(`${API_URL}/social/comment/like`, {
+      user_id: userId,
+      comment_id: commentId
+    }, { headers });
+    return response.data;
+  } catch (error) {
+    throw error.response ? error.response.data : { message: 'Network error' };
+  }
+};
+
+// Unlike a comment
+export const unlikeComment = async (userId, commentId) => {
+  try {
+    const headers = await getAuthHeaders();
+    const response = await axios.delete(`${API_URL}/social/comment/like`, {
+      headers,
+      data: {
+        user_id: userId,
+        comment_id: commentId
+      }
+    });
+    return response.data;
+  } catch (error) {
+    throw error.response ? error.response.data : { message: 'Network error' };
+  }
+};
+
+// Get user profile
+export const getUserProfile = async (userId) => {
+  try {
+    const headers = await getAuthHeaders();
+    const response = await axios.get(`${API_URL}/users/profile/${userId}`, { headers });
+    return response.data;
+  } catch (error) {
+    throw error.response ? error.response.data : { message: 'Network error' };
+  }
+};
+
+// Get user workouts
+export const getUserWorkouts = async (userId) => {
+  try {
+    const headers = await getAuthHeaders();
+    const response = await axios.get(`${API_URL}/users/workouts/${userId}`, { headers });
+    return response.data;
+  } catch (error) {
+    throw error.response ? error.response.data : { message: 'Network error' };
+  }
+};
+
+// Follow a user
+export const followUser = async (userId, targetUserId) => {
+  try {
+    const headers = await getAuthHeaders();
+    const response = await axios.post(`${API_URL}/social/follow`, {
+      user_id: userId,
+      target_user_id: targetUserId
+    }, { headers });
+    return response.data;
+  } catch (error) {
+    throw error.response ? error.response.data : { message: 'Network error' };
+  }
+};
+
+// Unfollow a user
+export const unfollowUser = async (userId, targetUserId) => {
+  try {
+    const headers = await getAuthHeaders();
+    const response = await axios.delete(`${API_URL}/social/follow`, {
+      headers,
+      data: {
+        user_id: userId,
+        target_user_id: targetUserId
+      }
+    });
     return response.data;
   } catch (error) {
     throw error.response ? error.response.data : { message: 'Network error' };

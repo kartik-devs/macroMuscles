@@ -2,6 +2,8 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
+const multer = require('multer');
+const path = require('path');
 require('dotenv').config();
 const jwt = require('jsonwebtoken');
 
@@ -33,6 +35,34 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Configure multer for image uploads
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'uploads/');
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({ 
+  storage: storage,
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB limit
+  },
+  fileFilter: function (req, file, cb) {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed!'), false);
+    }
+  }
+});
+
+// Serve uploaded images
+app.use('/uploads', express.static('uploads'));
 
 // Connect to MongoDB
 mongoose.connect(MONGODB_URI)
@@ -695,7 +725,7 @@ app.get('/api/friends/:userId', authenticateToken, async (req, res) => {
 
 // Social Routes
 // Share a workout
-app.post('/api/social/share', authenticateToken, async (req, res) => {
+app.post('/api/social/share', authenticateToken, upload.single('image'), async (req, res) => {
   try {
     const { user_id, workout_id, caption, visibility } = req.body;
     
@@ -709,14 +739,20 @@ app.post('/api/social/share', authenticateToken, async (req, res) => {
       return res.status(404).json({ message: 'Workout not found' });
     }
     
-    // Create shared workout
-    const sharedWorkout = new SharedWorkout({
+    // Create shared workout with optional image
+    const sharedWorkoutData = {
       user_id,
       workout_id,
       caption,
       visibility: visibility || 'friends'
-    });
+    };
     
+    // Add image URL if image was uploaded
+    if (req.file) {
+      sharedWorkoutData.image_url = `/uploads/${req.file.filename}`;
+    }
+    
+    const sharedWorkout = new SharedWorkout(sharedWorkoutData);
     await sharedWorkout.save();
     
     res.status(201).json({ 
@@ -763,6 +799,7 @@ app.get('/api/social/feed/:userId', authenticateToken, async (req, res) => {
         user_id: user._id,
         user_name: user.name,
         caption: shared.caption,
+        image_url: shared.image_url,
         workout_type: workout.workout_type,
         duration: workout.duration,
         calories_burned: workout.calories_burned,
@@ -841,7 +878,7 @@ app.delete('/api/social/like', authenticateToken, async (req, res) => {
 // Comment on a workout
 app.post('/api/social/comment', authenticateToken, async (req, res) => {
   try {
-    const { user_id, shared_workout_id, comment } = req.body;
+    const { user_id, shared_workout_id, comment, reply_to } = req.body;
     
     if (!user_id || !shared_workout_id || !comment) {
       return res.status(400).json({ message: 'User ID, shared workout ID, and comment are required' });
@@ -851,7 +888,8 @@ app.post('/api/social/comment', authenticateToken, async (req, res) => {
     const workoutComment = new WorkoutComment({
       user_id,
       shared_workout_id,
-      comment
+      comment,
+      reply_to: reply_to || null
     });
     
     await workoutComment.save();
@@ -872,11 +910,196 @@ app.post('/api/social/comment', authenticateToken, async (req, res) => {
 app.get('/api/social/comments/:sharedWorkoutId', authenticateToken, async (req, res) => {
   try {
     const { sharedWorkoutId } = req.params;
-    const comments = await WorkoutComment.getCommentsForWorkout(sharedWorkoutId);
+    const userId = req.user.id; // Get from authenticated token
+    const comments = await WorkoutComment.getCommentsForWorkout(sharedWorkoutId, userId);
     res.json(comments);
   } catch (error) {
     console.error('Error getting comments:', error);
     res.status(500).json({ message: 'Error getting comments' });
+  }
+});
+
+// Like a comment
+app.post('/api/social/comment/like', authenticateToken, async (req, res) => {
+  try {
+    const { user_id, comment_id } = req.body;
+    
+    if (!user_id || !comment_id) {
+      return res.status(400).json({ message: 'User ID and comment ID are required' });
+    }
+    
+    // Check if already liked
+    const existingLike = await WorkoutComment.findOne({ 
+      _id: comment_id, 
+      'likes.user_id': user_id 
+    });
+    
+    if (existingLike) {
+      return res.status(400).json({ message: 'Already liked this comment' });
+    }
+    
+    // Add like to comment
+    await WorkoutComment.findByIdAndUpdate(comment_id, {
+      $push: { likes: { user_id, created_at: new Date() } }
+    });
+    
+    res.json({ message: 'Comment liked successfully' });
+  } catch (error) {
+    console.error('Error liking comment:', error);
+    res.status(500).json({ message: 'Error liking comment' });
+  }
+});
+
+// Unlike a comment
+app.delete('/api/social/comment/like', authenticateToken, async (req, res) => {
+  try {
+    const { user_id, comment_id } = req.body;
+    
+    if (!user_id || !comment_id) {
+      return res.status(400).json({ message: 'User ID and comment ID are required' });
+    }
+    
+    // Remove like from comment
+    await WorkoutComment.findByIdAndUpdate(comment_id, {
+      $pull: { likes: { user_id } }
+    });
+    
+    res.json({ message: 'Comment unliked successfully' });
+  } catch (error) {
+    console.error('Error unliking comment:', error);
+    res.status(500).json({ message: 'Error unliking comment' });
+  }
+});
+
+// Get user profile
+app.get('/api/users/profile/:userId', authenticateToken, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    // Get user basic info
+    const user = await User.findById(userId).select('name email created_at');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Get user profile
+    const profile = await UserProfile.findOne({ user_id: userId });
+    
+    // Get user statistics
+    const stats = await UserStatistics.findOne({ user_id: userId });
+    
+    // Get followers and following count
+    const followersCount = await Friend.countDocuments({ 
+      friend_id: userId, 
+      status: 'accepted' 
+    });
+    const followingCount = await Friend.countDocuments({ 
+      user_id: userId, 
+      status: 'accepted' 
+    });
+    
+    // Get workouts count
+    const workoutsCount = await WorkoutHistory.countDocuments({ user_id: userId });
+    
+    res.json({
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      bio: profile?.bio || '',
+      joinDate: user.created_at,
+      followersCount,
+      followingCount,
+      workoutsCount,
+      profileImage: profile?.profile_image || null,
+      stats: stats || {}
+    });
+  } catch (error) {
+    console.error('Error getting user profile:', error);
+    res.status(500).json({ message: 'Error getting user profile' });
+  }
+});
+
+// Get user workouts
+app.get('/api/users/workouts/:userId', authenticateToken, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { limit = 20, offset = 0 } = req.query;
+    
+    const workouts = await WorkoutHistory.find({ user_id: userId })
+      .sort({ completed_at: -1 })
+      .limit(parseInt(limit))
+      .skip(parseInt(offset))
+      .select('workout_type duration calories_burned completed_at');
+    
+    res.json(workouts);
+  } catch (error) {
+    console.error('Error getting user workouts:', error);
+    res.status(500).json({ message: 'Error getting user workouts' });
+  }
+});
+
+// Follow a user
+app.post('/api/social/follow', authenticateToken, async (req, res) => {
+  try {
+    const { user_id, target_user_id } = req.body;
+    
+    if (!user_id || !target_user_id) {
+      return res.status(400).json({ message: 'User ID and target user ID are required' });
+    }
+    
+    if (user_id === target_user_id) {
+      return res.status(400).json({ message: 'Cannot follow yourself' });
+    }
+    
+    // Check if already following
+    const existingFollow = await Friend.findOne({ 
+      user_id, 
+      friend_id: target_user_id 
+    });
+    
+    if (existingFollow) {
+      return res.status(400).json({ message: 'Already following this user' });
+    }
+    
+    // Create follow relationship
+    const follow = new Friend({
+      user_id,
+      friend_id: target_user_id,
+      status: 'accepted' // Direct follow, not a request
+    });
+    
+    await follow.save();
+    
+    res.json({ message: 'User followed successfully' });
+  } catch (error) {
+    console.error('Error following user:', error);
+    res.status(500).json({ message: 'Error following user' });
+  }
+});
+
+// Unfollow a user
+app.delete('/api/social/follow', authenticateToken, async (req, res) => {
+  try {
+    const { user_id, target_user_id } = req.body;
+    
+    if (!user_id || !target_user_id) {
+      return res.status(400).json({ message: 'User ID and target user ID are required' });
+    }
+    
+    // Remove follow relationship
+    const deletedFollow = await Friend.findOneAndDelete({ 
+      user_id, 
+      friend_id: target_user_id 
+    });
+    
+    if (!deletedFollow) {
+      return res.status(400).json({ message: 'Follow relationship not found' });
+    }
+    
+    res.json({ message: 'User unfollowed successfully' });
+  } catch (error) {
+    console.error('Error unfollowing user:', error);
+    res.status(500).json({ message: 'Error unfollowing user' });
   }
 });
 
