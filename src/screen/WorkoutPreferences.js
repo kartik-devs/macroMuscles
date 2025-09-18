@@ -13,8 +13,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { getCurrentUserId } from '../api/auth';
 import { saveUserProfile, getUserProfile } from '../api/profile';
+import { useTheme } from '../theme/ThemeContext';
 
 export default function WorkoutPreferences({ navigation }) {
+  const { colors } = useTheme();
   const [selectedSplit, setSelectedSplit] = useState('');
   const [includeCardio, setIncludeCardio] = useState(false);
   const [cardioType, setCardioType] = useState('moderate');
@@ -116,22 +118,22 @@ export default function WorkoutPreferences({ navigation }) {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-      <StatusBar barStyle="dark-content" backgroundColor="#f8f9fa" />
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'left', 'right']}>
+      <StatusBar barStyle={colors.statusBar} backgroundColor={colors.background} />
       
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Workout Preferences</Text>
-          <Text style={styles.headerSubtitle}>
+        <View style={[styles.header, { backgroundColor: colors.surface }]}>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Workout Preferences</Text>
+          <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
             {selectedSplit ? 'Update your workout preferences' : 'Tell us about your workout preferences to create a personalized monthly plan'}
           </Text>
         </View>
 
         {/* Workout Split Section */}
-        <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Workout Split</Text>
-          <Text style={styles.sectionSubtitle}>How would you like to organize your workouts?</Text>
+        <View style={[styles.sectionContainer, { backgroundColor: colors.surface }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Workout Split</Text>
+          <Text style={[styles.sectionSubtitle, { color: colors.textSecondary }]}>How would you like to organize your workouts?</Text>
           
           <View style={styles.optionsContainer}>
             {workoutSplits.map((split) => (
@@ -139,8 +141,8 @@ export default function WorkoutPreferences({ navigation }) {
                 key={split.id}
                 style={[
                   styles.optionCard,
-                  selectedSplit === split.id && styles.selectedOptionCard,
-                  { borderColor: split.color }
+                  { backgroundColor: colors.surface, borderColor: split.color },
+                  selectedSplit === split.id && { backgroundColor: split.color }
                 ]}
                 onPress={() => setSelectedSplit(split.id)}
                 activeOpacity={0.8}
@@ -149,30 +151,30 @@ export default function WorkoutPreferences({ navigation }) {
                   <Ionicons 
                     name={split.icon} 
                     size={24} 
-                    color={selectedSplit === split.id ? '#fff' : split.color} 
+                    color={selectedSplit === split.id ? colors.textInverse : split.color} 
                   />
                   <Text style={[
                     styles.optionName,
-                    selectedSplit === split.id && styles.selectedOptionText
+                    { color: selectedSplit === split.id ? colors.textInverse : colors.text }
                   ]}>
                     {split.name}
                   </Text>
                 </View>
                 <Text style={[
                   styles.optionDescription,
-                  selectedSplit === split.id && styles.selectedOptionText
+                  { color: selectedSplit === split.id ? colors.textInverse : colors.textSecondary }
                 ]}>
                   {split.description}
                 </Text>
                 <Text style={[
                   styles.optionFrequency,
-                  selectedSplit === split.id && styles.selectedOptionText
+                  { color: selectedSplit === split.id ? colors.textInverse : colors.textTertiary }
                 ]}>
                   {split.frequency}
                 </Text>
                 {selectedSplit === split.id && (
-                  <View style={[styles.checkmark, { backgroundColor: split.color }]}>
-                    <Ionicons name="checkmark" size={16} color="#fff" />
+                  <View style={[styles.checkmark, { backgroundColor: colors.textInverse }]}>
+                    <Ionicons name="checkmark" size={16} color={split.color} />
                   </View>
                 )}
               </TouchableOpacity>
@@ -181,41 +183,41 @@ export default function WorkoutPreferences({ navigation }) {
         </View>
 
         {/* Cardio Section */}
-        <View style={styles.sectionContainer}>
+        <View style={[styles.sectionContainer, { backgroundColor: colors.surface }]}>
           <View style={styles.cardioHeader}>
-            <Text style={styles.sectionTitle}>Include Cardio</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Include Cardio</Text>
             <Switch
               value={includeCardio}
               onValueChange={setIncludeCardio}
-              trackColor={{ false: '#767577', true: '#E53935' }}
-              thumbColor={includeCardio ? '#fff' : '#f4f3f4'}
+              trackColor={{ false: colors.border, true: colors.primary }}
+              thumbColor={includeCardio ? colors.textInverse : colors.textTertiary}
             />
           </View>
           
           {includeCardio && (
             <View style={styles.cardioOptions}>
-              <Text style={styles.sectionSubtitle}>What type of cardio do you prefer?</Text>
+              <Text style={[styles.sectionSubtitle, { color: colors.textSecondary }]}>What type of cardio do you prefer?</Text>
               <View style={styles.cardioButtons}>
                 {cardioTypes.map((type) => (
                   <TouchableOpacity
                     key={type.id}
                     style={[
                       styles.cardioButton,
-                      cardioType === type.id && styles.selectedCardioButton,
-                      { borderColor: type.color }
+                      { backgroundColor: colors.surface, borderColor: type.color },
+                      cardioType === type.id && { backgroundColor: type.color }
                     ]}
                     onPress={() => setCardioType(type.id)}
                     activeOpacity={0.8}
                   >
                     <Text style={[
                       styles.cardioButtonText,
-                      cardioType === type.id && styles.selectedCardioButtonText
+                      { color: cardioType === type.id ? colors.textInverse : colors.text }
                     ]}>
                       {type.name}
                     </Text>
                     <Text style={[
                       styles.cardioButtonDescription,
-                      cardioType === type.id && styles.selectedCardioButtonText
+                      { color: cardioType === type.id ? colors.textInverse : colors.textSecondary }
                     ]}>
                       {type.description}
                     </Text>

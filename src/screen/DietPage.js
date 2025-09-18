@@ -17,11 +17,13 @@ import { getCurrentUserId } from '../api/auth';
 import { saveUserProfile, getUserProfile } from '../api/profile';
 import { getDailyNutrition, saveDailyNutrition, getUserGoal } from '../api/diet';
 import { getRecommendedExercises } from './diets/data/exerciseData';
+import { useTheme } from '../theme/ThemeContext';
 
 const Tab = createBottomTabNavigator();
 
 // User Preferences Screen
 function UserPreferencesScreen({ navigation }) {
+  const { colors } = useTheme();
   const [selectedDietPreference, setSelectedDietPreference] = useState('');
   const [selectedWorkoutSplit, setSelectedWorkoutSplit] = useState('');
   const [userId, setUserId] = useState(null);
@@ -91,22 +93,22 @@ function UserPreferencesScreen({ navigation }) {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-      <StatusBar barStyle="dark-content" backgroundColor="#f8f9fa" />
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'left', 'right']}>
+      <StatusBar barStyle={colors.statusBar} backgroundColor={colors.background} />
       
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Personalized Recommendations</Text>
-          <Text style={styles.headerSubtitle}>
+        <View style={[styles.header, { backgroundColor: colors.surface }]}>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Personalized Recommendations</Text>
+          <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
             Tell us about your preferences to get personalized diet and workout recommendations
           </Text>
         </View>
 
         {/* Diet Preference Section */}
-        <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Diet Preference</Text>
-          <Text style={styles.sectionSubtitle}>What's your primary diet goal?</Text>
+        <View style={[styles.sectionContainer, { backgroundColor: colors.surface }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Diet Preference</Text>
+          <Text style={[styles.sectionSubtitle, { color: colors.textSecondary }]}>What's your primary diet goal?</Text>
           
           <View style={styles.optionsContainer}>
             {dietPreferences.map((pref) => (
@@ -114,8 +116,8 @@ function UserPreferencesScreen({ navigation }) {
                 key={pref.id}
                 style={[
                   styles.optionCard,
+                  { backgroundColor: colors.surface, borderColor: pref.color },
                   selectedDietPreference === pref.id && styles.selectedOptionCard,
-                  { borderColor: pref.color }
                 ]}
                 onPress={() => setSelectedDietPreference(pref.id)}
                 activeOpacity={0.8}
@@ -127,6 +129,7 @@ function UserPreferencesScreen({ navigation }) {
                 />
                 <Text style={[
                   styles.optionText,
+                  { color: colors.text },
                   selectedDietPreference === pref.id && styles.selectedOptionText
                 ]}>
                   {pref.name}
@@ -142,9 +145,9 @@ function UserPreferencesScreen({ navigation }) {
         </View>
 
         {/* Workout Split Section */}
-        <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Workout Split</Text>
-          <Text style={styles.sectionSubtitle}>How do you like to organize your workouts?</Text>
+        <View style={[styles.sectionContainer, { backgroundColor: colors.surface }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Workout Split</Text>
+          <Text style={[styles.sectionSubtitle, { color: colors.textSecondary }]}>How do you like to organize your workouts?</Text>
           
           <View style={styles.optionsContainer}>
             {workoutSplits.map((split) => (
@@ -152,8 +155,8 @@ function UserPreferencesScreen({ navigation }) {
                 key={split.id}
                 style={[
                   styles.optionCard,
+                  { backgroundColor: colors.surface, borderColor: split.color },
                   selectedWorkoutSplit === split.id && styles.selectedOptionCard,
-                  { borderColor: split.color }
                 ]}
                 onPress={() => setSelectedWorkoutSplit(split.id)}
                 activeOpacity={0.8}
@@ -165,6 +168,7 @@ function UserPreferencesScreen({ navigation }) {
                 />
                 <Text style={[
                   styles.optionText,
+                  { color: colors.text },
                   selectedWorkoutSplit === split.id && styles.selectedOptionText
                 ]}>
                   {split.name}
@@ -183,13 +187,14 @@ function UserPreferencesScreen({ navigation }) {
         <TouchableOpacity
           style={[
             styles.continueButton,
+            { backgroundColor: colors.primary },
             (!selectedDietPreference || !selectedWorkoutSplit) && styles.disabledButton
           ]}
           onPress={handleContinue}
           disabled={!selectedDietPreference || !selectedWorkoutSplit}
         >
-          <Text style={styles.continueButtonText}>Get Recommendations</Text>
-          <Ionicons name="arrow-forward" size={20} color="#fff" />
+          <Text style={[styles.continueButtonText, { color: colors.textInverse }]}>Get Recommendations</Text>
+          <Ionicons name="arrow-forward" size={20} color={colors.textInverse} />
         </TouchableOpacity>
 
         {/* Bottom spacing */}
@@ -201,6 +206,7 @@ function UserPreferencesScreen({ navigation }) {
 
 // Recommended Diet Plan Screen
 function RecommendedDietPlanScreen({ route }) {
+  const { colors } = useTheme();
   const { dietPreference, workoutSplit } = route.params || {};
   const [activeTab, setActiveTab] = useState('breakfast');
   const [cheatDayUnlocked, setCheatDayUnlocked] = useState(false);
@@ -256,6 +262,38 @@ function RecommendedDietPlanScreen({ route }) {
   // Add default values to prevent undefined errors
   const defaultDietPreference = dietPreference || 'maintenance';
   const defaultWorkoutSplit = workoutSplit || 'push_pull_legs';
+
+  // Helper function to get workout split abbreviation
+  const getWorkoutSplitAbbreviation = (split) => {
+    switch (split) {
+      case 'push_pull_legs':
+        return 'PPL';
+      case 'upper_lower':
+        return 'UL';
+      case 'full_body':
+        return 'FB';
+      case 'bro_split':
+        return 'BRO';
+      default:
+        return 'PPL';
+    }
+  };
+
+  // Helper function to get workout split display name
+  const getWorkoutSplitDisplayName = (split) => {
+    switch (split) {
+      case 'push_pull_legs':
+        return 'Push Pull Legs';
+      case 'upper_lower':
+        return 'Upper Lower';
+      case 'full_body':
+        return 'Full Body';
+      case 'bro_split':
+        return 'Bro Split';
+      default:
+        return 'Push Pull Legs';
+    }
+  };
 
   // Diet recommendations based on preferences
   const getDietRecommendations = () => {
@@ -362,32 +400,32 @@ function RecommendedDietPlanScreen({ route }) {
   };
 
   const renderMealCard = (meal, index) => (
-    <View style={styles.mealCard}>
+    <View style={[styles.mealCard, { backgroundColor: colors.surface }]}>
       <Image 
         source={meal.image} 
         style={styles.mealImage}
         resizeMode="cover"
       />
       <View style={styles.mealContent}>
-        <Text style={styles.mealName}>{meal.name}</Text>
+        <Text style={[styles.mealName, { color: colors.text }]}>{meal.name}</Text>
         <View style={styles.mealNutrition}>
-          <Text style={styles.nutritionText}>{meal.calories} cal</Text>
-          <Text style={styles.nutritionText}>{meal.protein}g protein</Text>
-          <Text style={styles.nutritionText}>{meal.carbs}g carbs</Text>
-          <Text style={styles.nutritionText}>{meal.fat}g fat</Text>
+          <Text style={[styles.nutritionText, { color: colors.textSecondary, backgroundColor: colors.surfaceSecondary }]}>{meal.calories} cal</Text>
+          <Text style={[styles.nutritionText, { color: colors.textSecondary, backgroundColor: colors.surfaceSecondary }]}>{meal.protein}g protein</Text>
+          <Text style={[styles.nutritionText, { color: colors.textSecondary, backgroundColor: colors.surfaceSecondary }]}>{meal.carbs}g carbs</Text>
+          <Text style={[styles.nutritionText, { color: colors.textSecondary, backgroundColor: colors.surfaceSecondary }]}>{meal.fat}g fat</Text>
         </View>
-        <View style={styles.mealActions}>
+        <View style={[styles.mealActions, { borderTopColor: colors.borderLight }]}>
           <TouchableOpacity 
-            style={styles.actionButton}
+            style={[styles.actionButton, { backgroundColor: colors.surfaceSecondary }]}
             onPress={() => handleThumbsUp(meal, index)}
           >
-            <Ionicons name="thumbs-up-outline" size={20} color="#44bd32" />
+            <Ionicons name="thumbs-up-outline" size={20} color={colors.success} />
           </TouchableOpacity>
           <TouchableOpacity 
-            style={styles.actionButton}
+            style={[styles.actionButton, { backgroundColor: colors.surfaceSecondary }]}
             onPress={() => handleThumbsDown(meal, index)}
           >
-            <Ionicons name="thumbs-down-outline" size={20} color="#E53935" />
+            <Ionicons name="thumbs-down-outline" size={20} color={colors.error} />
           </TouchableOpacity>
         </View>
       </View>
@@ -395,15 +433,15 @@ function RecommendedDietPlanScreen({ route }) {
   );
 
   const renderExerciseCard = (exercise) => (
-    <View style={styles.exerciseCard}>
-      <Text style={styles.exerciseName}>{exercise.name}</Text>
+    <View style={[styles.exerciseCard, { backgroundColor: colors.surface }]}>
+      <Text style={[styles.exerciseName, { color: colors.text }]}>{exercise.name}</Text>
       <View style={styles.exerciseDetails}>
-        <Text style={styles.exerciseDetail}>{exercise.sets} sets</Text>
-        <Text style={styles.exerciseDetail}>{exercise.reps}</Text>
-        <Text style={styles.exerciseDetail}>{exercise.rest} rest</Text>
+        <Text style={[styles.exerciseDetail, { color: colors.textSecondary, backgroundColor: colors.surfaceSecondary }]}>{exercise.sets} sets</Text>
+        <Text style={[styles.exerciseDetail, { color: colors.textSecondary, backgroundColor: colors.surfaceSecondary }]}>{exercise.reps}</Text>
+        <Text style={[styles.exerciseDetail, { color: colors.textSecondary, backgroundColor: colors.surfaceSecondary }]}>{exercise.rest} rest</Text>
       </View>
       <View style={[styles.difficultyBadge, { backgroundColor: getDifficultyColor(exercise.difficulty) }]}>
-        <Text style={styles.difficultyText}>{exercise.difficulty}</Text>
+        <Text style={[styles.difficultyText, { color: colors.textInverse }]}>{exercise.difficulty}</Text>
       </View>
     </View>
   );
@@ -427,37 +465,48 @@ function RecommendedDietPlanScreen({ route }) {
   ];
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-      <StatusBar barStyle="dark-content" backgroundColor="#f8f9fa" />
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'left', 'right']}>
+      <StatusBar barStyle={colors.statusBar} backgroundColor={colors.background} />
       
       {/* Header */}
-      <View style={styles.planHeader}>
-        <Text style={styles.planTitle}>Your Recommended Diet Plan</Text>
-        <Text style={styles.planSubtitle}>
-          Based on your {defaultDietPreference.replace('_', ' ')} preference and {defaultWorkoutSplit.replace('_', ' ')} split
-        </Text>
+      <View style={[styles.planHeader, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+        <View style={styles.headerContent}>
+          <View style={[styles.initialCircle, { backgroundColor: colors.primary }]}>
+            <Text style={[styles.initialText, { color: colors.textInverse }]}>
+              {getWorkoutSplitAbbreviation(defaultWorkoutSplit)}
+            </Text>
+          </View>
+          <View style={styles.headerTextContainer}>
+            <Text style={[styles.planTitle, { color: colors.text }]}>
+              {getWorkoutSplitDisplayName(defaultWorkoutSplit)}
+            </Text>
+            <Text style={[styles.planSubtitle, { color: colors.textSecondary }]}>
+              Based on your {defaultDietPreference.replace('_', ' ')} preference
+            </Text>
+          </View>
+        </View>
       </View>
 
       {/* Daily Summary */}
-      <View style={styles.sectionContainer}>
-        <Text style={styles.sectionTitle}>Today</Text>
+      <View style={[styles.sectionContainer, { backgroundColor: colors.surface }]}>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Today</Text>
         {loadingDaily ? (
-          <Text style={styles.sectionSubtitle}>Loading daily nutrition...</Text>
+          <Text style={[styles.sectionSubtitle, { color: colors.textSecondary }]}>Loading daily nutrition...</Text>
         ) : (
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
             <View>
-              <Text style={{ fontSize: 16, fontWeight: '700', color: '#1a1a1a' }}>{consumedCalories} / {targetCalories} cal</Text>
-              <Text style={{ fontSize: 12, color: '#666', marginTop: 4 }}>Remaining: {Math.max(0, targetCalories - consumedCalories)} cal</Text>
+              <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text }}>{consumedCalories} / {targetCalories} cal</Text>
+              <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 4 }}>Remaining: {Math.max(0, targetCalories - consumedCalories)} cal</Text>
             </View>
             <View style={{ flexDirection: 'row' }}>
-              <TouchableOpacity style={styles.quickAddButton} onPress={() => addCalories(100)}>
-                <Text style={styles.quickAddText}>+100</Text>
+              <TouchableOpacity style={[styles.quickAddButton, { backgroundColor: colors.primary }]} onPress={() => addCalories(100)}>
+                <Text style={[styles.quickAddText, { color: colors.textInverse }]}>+100</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.quickAddButton} onPress={() => addCalories(200)}>
-                <Text style={styles.quickAddText}>+200</Text>
+              <TouchableOpacity style={[styles.quickAddButton, { backgroundColor: colors.primary }]} onPress={() => addCalories(200)}>
+                <Text style={[styles.quickAddText, { color: colors.textInverse }]}>+200</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.quickAddButton} onPress={() => addCalories(300)}>
-                <Text style={styles.quickAddText}>+300</Text>
+              <TouchableOpacity style={[styles.quickAddButton, { backgroundColor: colors.primary }]} onPress={() => addCalories(300)}>
+                <Text style={[styles.quickAddText, { color: colors.textInverse }]}>+300</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -465,25 +514,25 @@ function RecommendedDietPlanScreen({ route }) {
       </View>
 
       {/* Tab Navigation */}
-      <View style={styles.tabContainer}>
+      <View style={[styles.tabContainer, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           {tabs.map((tab) => (
             <TouchableOpacity
               key={tab.id}
               style={[
                 styles.tabButton,
-                activeTab === tab.id && styles.activeTabButton
+                { backgroundColor: activeTab === tab.id ? colors.primary : 'transparent' }
               ]}
               onPress={() => setActiveTab(tab.id)}
             >
               <Ionicons 
                 name={tab.icon} 
                 size={20} 
-                color={activeTab === tab.id ? '#fff' : '#666'} 
+                color={activeTab === tab.id ? colors.textInverse : colors.textTertiary} 
               />
               <Text style={[
                 styles.tabText,
-                activeTab === tab.id && styles.activeTabText
+                { color: activeTab === tab.id ? colors.textInverse : colors.textTertiary }
               ]}>
                 {tab.name}
               </Text>
@@ -496,15 +545,15 @@ function RecommendedDietPlanScreen({ route }) {
       <ScrollView style={styles.contentContainer} showsVerticalScrollIndicator={false}>
         {activeTab === 'cheat_day' && !cheatDayUnlocked ? (
           <View style={styles.lockedContainer}>
-            <Ionicons name="lock-closed" size={64} color="#ccc" />
-            <Text style={styles.lockedTitle}>Cheat Day Locked</Text>
-            <Text style={styles.lockedSubtitle}>
+            <Ionicons name="lock-closed" size={64} color={colors.textTertiary} />
+            <Text style={[styles.lockedTitle, { color: colors.text }]}>Cheat Day Locked</Text>
+            <Text style={[styles.lockedSubtitle, { color: colors.textSecondary }]}>
               Follow your diet consistently for at least 5 days in a row to unlock cheat day recommendations!
             </Text>
             <View style={styles.progressContainer}>
-              <Text style={styles.progressText}>Progress: 0/5 days</Text>
-              <View style={styles.progressBar}>
-                <View style={[styles.progressFill, { width: '0%' }]} />
+              <Text style={[styles.progressText, { color: colors.textSecondary }]}>Progress: 0/5 days</Text>
+              <View style={[styles.progressBar, { backgroundColor: colors.surfaceSecondary }]}>
+                <View style={[styles.progressFill, { width: '0%', backgroundColor: colors.primary }]} />
               </View>
             </View>
           </View>
@@ -512,7 +561,7 @@ function RecommendedDietPlanScreen({ route }) {
            <View style={styles.workoutsContainer}>
              {workoutData.map((day, dayIndex) => (
                <View key={dayIndex} style={styles.workoutDayContainer}>
-                 <Text style={styles.workoutDayTitle}>{day.day}</Text>
+                 <Text style={[styles.workoutDayTitle, { color: colors.text }]}>{day.day}</Text>
                  <FlatList
                    data={day.exercises}
                    keyExtractor={(item, index) => index.toString()}
@@ -550,6 +599,7 @@ function RecommendedDietPlanScreen({ route }) {
 
 // Popular Diet Plans Screen
 function PopularDietPlansScreen({ navigation }) {
+  const { colors } = useTheme();
   const dietSections = [
     {
       title: 'Weight Loss',
@@ -618,21 +668,21 @@ function PopularDietPlansScreen({ navigation }) {
   ];
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-      <StatusBar barStyle="dark-content" backgroundColor="#f8f9fa" />
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'left', 'right']}>
+      <StatusBar barStyle={colors.statusBar} backgroundColor={colors.background} />
       
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Diet List Section */}
-        <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Popular Diet Plans</Text>
+        <View style={[styles.sectionContainer, { backgroundColor: colors.surface }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Popular Diet Plans</Text>
           {dietSections.map((section, idx) => (
             <View key={idx} style={{ marginBottom: 18 }}>
-              <Text style={{ fontWeight: 'bold', fontSize: 16, marginBottom: 8, color: '#0097e6' }}>{section.title}</Text>
+              <Text style={{ fontWeight: 'bold', fontSize: 16, marginBottom: 8, color: colors.primary }}>{section.title}</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                 {section.diets.map((diet, dIdx) => (
                   <TouchableOpacity
                     key={dIdx}
-                    style={[styles.dietCard, { borderColor: diet.color }]}
+                    style={[styles.dietCard, { backgroundColor: colors.surface, borderColor: diet.color }]}
                     onPress={() => {
                       switch (diet.name) {
                         case 'Keto Diet':
@@ -663,12 +713,12 @@ function PopularDietPlansScreen({ navigation }) {
                     activeOpacity={0.85}
                   >
                     <Ionicons name={diet.icon} size={28} color={diet.color} style={{ marginBottom: 6 }} />
-                    <Text style={styles.dietName}>{diet.name}</Text>
-                    <Text style={styles.dietDesc}>{diet.description}</Text>
+                    <Text style={[styles.dietName, { color: colors.text }]}>{diet.name}</Text>
+                    <Text style={[styles.dietDesc, { color: colors.textSecondary }]}>{diet.description}</Text>
                     {diet.features.map((f, i) => (
                       <View key={i} style={styles.dietFeatureRow}>
                         <Ionicons name="checkmark-circle" size={14} color={diet.color} />
-                        <Text style={styles.dietFeatureText}> {f}</Text>
+                        <Text style={[styles.dietFeatureText, { color: colors.text }]}> {f}</Text>
                       </View>
                     ))}
                   </TouchableOpacity>
@@ -687,6 +737,8 @@ function PopularDietPlansScreen({ navigation }) {
 
 // Main DietPage Component with Tab Navigator
 export default function DietPage({ navigation }) {
+  const { colors } = useTheme();
+  
   return (
     <Tab.Navigator
       screenOptions={({ route, navigation: nav }) => ({
@@ -694,7 +746,7 @@ export default function DietPage({ navigation }) {
         headerTitle: route.name === 'PopularDietPlans' ? 'Diet Plans' : route.name === 'RecommendedDietPlan' ? 'Your Plan' : route.name,
         headerRight: () => (
           <TouchableOpacity style={{ paddingHorizontal: 12 }} onPress={() => navigation.navigate('SettingsPage')}>
-            <Ionicons name="settings-outline" size={22} color="#1a1a1a" />
+            <Ionicons name="settings-outline" size={22} color={colors.text} />
           </TouchableOpacity>
         ),
         tabBarIcon: ({ focused, color, size }) => {
@@ -706,13 +758,13 @@ export default function DietPage({ navigation }) {
           }
           return <Ionicons name={iconName} size={size} color={color} />;
         },
-        tabBarActiveTintColor: '#E53935',
-        tabBarInactiveTintColor: '#777',
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.textTertiary,
         tabBarStyle: {
-          backgroundColor: '#fff',
+          backgroundColor: colors.surface,
           borderTopWidth: 0,
           elevation: 10,
-          shadowColor: '#000',
+          shadowColor: colors.shadow,
           shadowOffset: { width: 0, height: -2 },
           shadowOpacity: 0.1,
           shadowRadius: 4,
@@ -852,6 +904,30 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
+  },
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  initialCircle: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  initialText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  headerTextContainer: {
+    flex: 1,
   },
   planTitle: {
     fontSize: 24,

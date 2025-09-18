@@ -14,8 +14,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { getCurrentUserId } from '../api/auth';
 import { getUserProfile } from '../api/profile';
 import { getWorkoutHistory } from '../api/workouts';
+import { useTheme } from '../theme/ThemeContext';
 
 export default function WorkoutMain({ navigation }) {
+  const { colors } = useTheme();
   const [loading, setLoading] = useState(true);
   const [introSeen, setIntroSeen] = useState(null); // null=loading, true/false after check
   const [userProfile, setUserProfile] = useState(null);
@@ -99,12 +101,19 @@ export default function WorkoutMain({ navigation }) {
 
   if (loading || introSeen === null) {
     return (
-      <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="light-content" backgroundColor="#000" />
+   
+
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <view>
+        <TouchableOpacity onPress={()=> navigation.navigate("settings")}>
+          <Ionicons name = "settings" size = {24} color = "000"/>
+        </TouchableOpacity>
+        <StatusBar barStyle={colors.statusBar} backgroundColor={colors.background} />
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#E53935" />
-          <Text style={styles.loadingText}>Loading your workout...</Text>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading your workout...</Text>
         </View>
+        </view>
       </SafeAreaView>
     );
   }
@@ -112,101 +121,102 @@ export default function WorkoutMain({ navigation }) {
   // First-time intro
   if (!introSeen) {
     return (
-      <SafeAreaView style={styles.introContainer} edges={['top', 'left', 'right']}>
-        <StatusBar barStyle="light-content" backgroundColor="#000" />
+      <SafeAreaView style={[styles.introContainer, { backgroundColor: colors.background }]} edges={['top', 'left', 'right']}>
+        <StatusBar barStyle={colors.statusBar} backgroundColor={colors.background} />
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.introContent}>
-          <Ionicons name="barbell" size={56} color="#fff" />
-          <Text style={styles.introTitle}>Welcome to Workouts</Text>
-          <Text style={styles.introSubtitle}>Personalized plans, quick start, and progress tracking.</Text>
+          <Ionicons name="barbell" size={56} color={colors.text} />
+          <Text style={[styles.introTitle, { color: colors.text }]}>Welcome to Workouts</Text>
+          <Text style={[styles.introSubtitle, { color: colors.textSecondary }]}>Personalized plans, quick start, and progress tracking.</Text>
           <View style={styles.introFeatureRow}>
-            <Ionicons name="flash" size={20} color="#fff" />
-            <Text style={styles.introFeatureText}>Quick-start today's session</Text>
+            <Ionicons name="flash" size={20} color={colors.text} />
+            <Text style={[styles.introFeatureText, { color: colors.text }]}>Quick-start today's session</Text>
           </View>
           <View style={styles.introFeatureRow}>
-            <Ionicons name="calendar" size={20} color="#fff" />
-            <Text style={styles.introFeatureText}>See your monthly plan</Text>
+            <Ionicons name="calendar" size={20} color={colors.text} />
+            <Text style={[styles.introFeatureText, { color: colors.text }]}>See your monthly plan</Text>
           </View>
-          <TouchableOpacity style={styles.introPrimaryButton} onPress={onIntroContinue}>
-            <Text style={styles.introPrimaryText}>Continue</Text>
-            <Ionicons name="arrow-forward" size={20} color="#000" />
+          <TouchableOpacity style={[styles.introPrimaryButton, { backgroundColor: colors.text }]} onPress={onIntroContinue}>
+            <Text style={[styles.introPrimaryText, { color: colors.textInverse }]}>Continue</Text>
+            <Ionicons name="arrow-forward" size={20} color={colors.textInverse} />
           </TouchableOpacity>
         </ScrollView>
       </SafeAreaView>
+      
     );
   }
 
   // Main redesigned page
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#000" />
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle={colors.statusBar} backgroundColor={colors.background} />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.contentContainer}>
         {/* Header */}
-        <View style={styles.header}>
+        <View style={[styles.header, { backgroundColor: colors.background }]}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
             <View style={{ flex: 1, paddingRight: 12 }}>
-              <Text style={styles.headerTitle}>Workouts</Text>
-              <Text style={styles.headerSubtitle}>
+              <Text style={[styles.headerTitle, { color: colors.text }]}>Workouts</Text>
+              <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
                 {hasPreferences ? `Split: ${userProfile.workout_split.replaceAll('_', ' ')}` : 'Set your preferences to get a plan'}
               </Text>
             </View>
-            <TouchableOpacity onPress={navigateToPreferences} style={{ backgroundColor: '#111', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, flexDirection: 'row', alignItems: 'center' }}>
-              <Ionicons name="options-outline" size={16} color="#fff" />
-              <Text style={{ color: '#fff', marginLeft: 8, fontWeight: '600' }}>Preferences</Text>
+            <TouchableOpacity onPress={navigateToPreferences} style={{ backgroundColor: colors.surface, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, flexDirection: 'row', alignItems: 'center' }}>
+              <Ionicons name="options-outline" size={16} color={colors.text} />
+              <Text style={{ color: colors.text, marginLeft: 8, fontWeight: '600' }}>Preferences</Text>
             </TouchableOpacity>
           </View>
         </View>
 
         {/* Today card */}
-        <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Today</Text>
+        <View style={[styles.sectionContainer, { backgroundColor: colors.surface }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Today</Text>
           {hasPreferences ? (
-            <View style={styles.infoCard}>
-              <Ionicons name="flash" size={28} color="#fff" />
-              <Text style={styles.infoTitle}>{todayPlan}</Text>
-              <Text style={styles.infoText}>
+            <View style={[styles.infoCard, { backgroundColor: colors.surfaceSecondary }]}>
+              <Ionicons name="flash" size={28} color={colors.text} />
+              <Text style={[styles.infoTitle, { color: colors.text }]}>{todayPlan}</Text>
+              <Text style={[styles.infoText, { color: colors.textSecondary }]}>
                 Tap Quick Start to jump in, or open your monthly plan.
               </Text>
               <View style={{ flexDirection: 'row', gap: 12 }}>
-                <TouchableOpacity style={styles.primaryButton} onPress={quickStart}>
-                  <Text style={styles.primaryButtonText}>Quick Start</Text>
-                  <Ionicons name="play" size={18} color="#fff" />
+                <TouchableOpacity style={[styles.primaryButton, { backgroundColor: colors.primary }]} onPress={quickStart}>
+                  <Text style={[styles.primaryButtonText, { color: colors.textInverse }]}>Quick Start</Text>
+                  <Ionicons name="play" size={18} color={colors.textInverse} />
                 </TouchableOpacity>
-                <TouchableOpacity style={[styles.primaryButton, { backgroundColor: '#333' }]} onPress={openPlan}>
-                  <Text style={[styles.primaryButtonText, { color: '#fff' }]}>View Plan</Text>
-                  <Ionicons name="calendar" size={18} color="#fff" />
+                <TouchableOpacity style={[styles.primaryButton, { backgroundColor: colors.surfaceTertiary }]} onPress={openPlan}>
+                  <Text style={[styles.primaryButtonText, { color: colors.text }]}>View Plan</Text>
+                  <Ionicons name="calendar" size={18} color={colors.text} />
                 </TouchableOpacity>
               </View>
             </View>
           ) : (
-            <View style={styles.infoCard}>
-              <Ionicons name="settings" size={28} color="#fff" />
-              <Text style={styles.infoTitle}>Set your preferences</Text>
-              <Text style={styles.infoText}>Choose a split and cardio options to generate your plan.</Text>
-              <TouchableOpacity style={styles.primaryButton} onPress={navigateToPreferences}>
-                <Text style={styles.primaryButtonText}>Open Preferences</Text>
-                <Ionicons name="arrow-forward" size={18} color="#fff" />
+            <View style={[styles.infoCard, { backgroundColor: colors.surfaceSecondary }]}>
+              <Ionicons name="settings" size={28} color={colors.text} />
+              <Text style={[styles.infoTitle, { color: colors.text }]}>Set your preferences</Text>
+              <Text style={[styles.infoText, { color: colors.textSecondary }]}>Choose a split and cardio options to generate your plan.</Text>
+              <TouchableOpacity style={[styles.primaryButton, { backgroundColor: colors.primary }]} onPress={navigateToPreferences}>
+                <Text style={[styles.primaryButtonText, { color: colors.textInverse }]}>Open Preferences</Text>
+                <Ionicons name="arrow-forward" size={18} color={colors.textInverse} />
               </TouchableOpacity>
             </View>
           )}
         </View>
 
         {/* Recent workouts */}
-        <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Recent Workouts</Text>
+        <View style={[styles.sectionContainer, { backgroundColor: colors.surface }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Recent Workouts</Text>
           {history && history.length > 0 ? (
             <View style={{ gap: 12 }}>
               {history.slice(0, 5).map((item) => (
-                <View key={item._id || String(item.id)} style={{ backgroundColor: '#111', borderRadius: 12, padding: 14, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <View key={item._id || String(item.id)} style={{ backgroundColor: colors.surfaceSecondary, borderRadius: 12, padding: 14, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                   <View>
-                    <Text style={{ color: '#fff', fontWeight: '600' }}>{item.workout_type || 'Workout'}</Text>
-                    <Text style={{ color: '#aaa', marginTop: 2 }}>{(item.duration || 0)} min · {(item.calories_burned || 0)} kcal</Text>
+                    <Text style={{ color: colors.text, fontWeight: '600' }}>{item.workout_type || 'Workout'}</Text>
+                    <Text style={{ color: colors.textSecondary, marginTop: 2 }}>{(item.duration || 0)} min · {(item.calories_burned || 0)} kcal</Text>
                   </View>
-                  <Ionicons name="chevron-forward" size={20} color="#888" />
+                  <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
                 </View>
               ))}
             </View>
           ) : (
-            <Text style={{ color: '#888' }}>No workouts yet. Start your first session today!</Text>
+            <Text style={{ color: colors.textTertiary }}>No workouts yet. Start your first session today!</Text>
           )}
         </View>
       </ScrollView>

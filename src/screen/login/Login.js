@@ -11,8 +11,10 @@ import {
 import { loginStyles } from '../../style/loginStyles';
 import { loginUser, initAuth, getToken } from '../../api/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useTheme } from '../../theme/ThemeContext';
 
 export default function Login({ navigation }) {
+  const { colors } = useTheme();
   const [activeTab, setActiveTab] = useState('email'); // 'email' or 'phone'
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -99,9 +101,9 @@ export default function Login({ navigation }) {
     if (activeTab === 'email') {
       return (
         <TextInput
-          style={loginStyles.input}
+          style={[loginStyles.input, { backgroundColor: colors.input, borderColor: colors.inputBorder, color: colors.text }]}
           placeholder="Email"
-          placeholderTextColor="rgba(255,255,255,0.5)"
+          placeholderTextColor={colors.inputPlaceholder}
           value={email}
           onChangeText={setEmail}
           keyboardType="email-address"
@@ -111,9 +113,9 @@ export default function Login({ navigation }) {
     } else {
       return (
         <TextInput
-          style={loginStyles.input}
+          style={[loginStyles.input, { backgroundColor: colors.input, borderColor: colors.inputBorder, color: colors.text }]}
           placeholder="Phone Number"
-          placeholderTextColor="rgba(255,255,255,0.5)"
+          placeholderTextColor={colors.inputPlaceholder}
           value={phone}
           onChangeText={setPhone}
           keyboardType="phone-pad"
@@ -123,42 +125,42 @@ export default function Login({ navigation }) {
   };
 
   return (
-    <View style={loginStyles.container}>
-      <View style={loginStyles.topSection}>
+    <View style={[loginStyles.container, { backgroundColor: colors.background }]}>
+      <View style={[loginStyles.topSection, { backgroundColor: colors.background }]}>
          <Image
           source={require('../../assets/logo.jpg')}
           style={loginStyles.logo}
         />
       </View>
 
-      <View style={loginStyles.bottomSection}>
-        <Text style={loginStyles.title}>Welcome Back!</Text>
+      <View style={[loginStyles.bottomSection, { backgroundColor: colors.surface }]}>
+        <Text style={[loginStyles.title, { color: colors.text }]}>Welcome Back!</Text>
 
-        <View style={loginStyles.tabContainer}>
+        <View style={[loginStyles.tabContainer, { backgroundColor: colors.surfaceSecondary }]}>
           <TouchableOpacity
             style={[
               loginStyles.tab,
-              activeTab === 'email' && loginStyles.activeTab
+              { backgroundColor: activeTab === 'email' ? colors.primary : 'transparent' }
             ]}
             onPress={() => setActiveTab('email')}
           >
 
             <Text style={[
               loginStyles.tabText,
-              activeTab === 'email' && loginStyles.activeTabText
+              { color: activeTab === 'email' ? colors.textInverse : colors.textSecondary }
             ]}> Email </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={[
               loginStyles.tab,
-              activeTab === 'phone' && loginStyles.activeTab
+              { backgroundColor: activeTab === 'phone' ? colors.primary : 'transparent' }
             ]}
             onPress={() => setActiveTab('phone')}
           >
             <Text style={[
               loginStyles.tabText,
-              activeTab === 'phone' && loginStyles.activeTabText
+              { color: activeTab === 'phone' ? colors.textInverse : colors.textSecondary }
             ]}>Phone</Text>
           </TouchableOpacity>
         </View>
@@ -168,38 +170,38 @@ export default function Login({ navigation }) {
 
           
           <TextInput
-            style={loginStyles.input}
+            style={[loginStyles.input, { backgroundColor: colors.input, borderColor: colors.inputBorder, color: colors.text }]}
             placeholder="Password"
-            placeholderTextColor="rgba(255,255,255,0.5)"
+            placeholderTextColor={colors.inputPlaceholder}
             value={password}
             onChangeText={setPassword}
             secureTextEntry
           />
-          {error ? <Text style={loginStyles.errorText}>{error}</Text> : null}
+          {error ? <Text style={[loginStyles.errorText, { color: colors.error }]}>{error}</Text> : null}
         </View>
 
         <TouchableOpacity
-          style={loginStyles.button}
+          style={[loginStyles.button, { backgroundColor: colors.primary }]}
           onPress={handleLogin}
           disabled={loading}
         >
           {loading ? (
-            <ActivityIndicator color="#fff" size="small" />
+            <ActivityIndicator color={colors.textInverse} size="small" />
           ) : (
-            <Text style={loginStyles.buttonText}>Login</Text>
+            <Text style={[loginStyles.buttonText, { color: colors.textInverse }]}>Login</Text>
           )}
         </TouchableOpacity>
 
         <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')}>
-          <Text style={loginStyles.forgotPasswordText}>Forgot Password?</Text>
+          <Text style={[loginStyles.forgotPasswordText, { color: colors.primary }]}>Forgot Password?</Text>
         </TouchableOpacity>
 
         </View>
 
         <View style={loginStyles.footer}>
-          <Text style={loginStyles.footerText}>Don't have an account?</Text>
+          <Text style={[loginStyles.footerText, { color: colors.text }]}>Don't have an account?</Text>
           <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-            <Text style={loginStyles.footerLink}>Sign Up</Text>
+            <Text style={[loginStyles.footerLink, { color: colors.primary }]}>Sign Up</Text>
           </TouchableOpacity>
         </View>
       </View>

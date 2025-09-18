@@ -13,6 +13,7 @@ import {
   TextInput,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '../theme/ThemeContext';
 
 import { 
   getUserProfile, 
@@ -29,6 +30,7 @@ import ProfilePictureUpload from './ProfilePictureUpload';
 import { useNavigation } from '@react-navigation/native';
 
 export default function ProfilePage({ route }) {
+  const { colors } = useTheme();
   const navigation = useNavigation();
   const [userId, setUserId] = useState(null);
   const [isViewingFriend, setIsViewingFriend] = useState(false);
@@ -193,24 +195,24 @@ export default function ProfilePage({ route }) {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="light-content" backgroundColor="#f8f9fa" />
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <StatusBar barStyle={colors.statusBar} backgroundColor={colors.background} />
         <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Loading profile...</Text>
+          <Text style={[styles.loadingText, { color: colors.text }]}>Loading profile...</Text>
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#f8f9fa" />
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle={colors.statusBar} backgroundColor={colors.background} />
       
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Profile Header */}
-        <View style={styles.profileHeader}>
+        <View style={[styles.profileHeader, { backgroundColor: colors.surface }]}>
           <TouchableOpacity 
-            style={styles.avatarContainer}
+            style={[styles.avatarContainer, { backgroundColor: colors.background }]}
             onPress={() => setProfilePictureModalVisible(true)}
           >
             {profilePicture && profilePicture.image_url && !profilePicture.image_url.startsWith('avatar_') ? (
@@ -220,14 +222,14 @@ export default function ProfilePage({ route }) {
                 {profilePicture.image_url.split('_')[2] || '💪'}
               </Text>
             ) : (
-              <Text style={styles.avatarText}>{userProfile.avatar_initial}</Text>
+              <Text style={[styles.avatarText, { color: colors.textInverse }]}>{userProfile.avatar_initial}</Text>
             )}
-            <View style={styles.cameraIcon}>
+            <View style={[styles.cameraIcon, { backgroundColor: colors.primary }]}>
               <Ionicons name="camera" size={16} color="#fff" />
             </View>
           </TouchableOpacity>
           
-          <Text style={styles.userName}>{userProfile.display_name}</Text>
+          <Text style={[styles.userName, { color: colors.text }]}>{userProfile.display_name}</Text>
           
           {/* Level Badge */}
           <View style={styles.levelBadge}>
@@ -235,177 +237,177 @@ export default function ProfilePage({ route }) {
             <Text style={styles.levelText}>Level {userLevel.level}</Text>
           </View>
           
-          <TouchableOpacity style={styles.editButton} onPress={handleEditProfile}>
-            <Text style={styles.editButtonText}>edit</Text>
+          <TouchableOpacity style={[styles.editButton, { backgroundColor: colors.surfaceSecondary }]} onPress={handleEditProfile}>
+            <Text style={[styles.editButtonText, { color: colors.text }]}>edit</Text>
           </TouchableOpacity>
         </View>
 
         {/* Quick Actions */}
-        <View style={styles.quickActions}>
+        <View style={[styles.quickActions, { backgroundColor: colors.surface }]}>
           <TouchableOpacity 
             style={styles.quickAction}
             onPress={() => Alert.alert('Friends', 'Friends feature coming soon!')}
           >
             <Ionicons name="people" size={24} color="#0097e6" />
-            <Text style={styles.quickActionText}>Friends</Text>
+            <Text style={[styles.quickActionText, { color: colors.textSecondary }]}>Friends</Text>
           </TouchableOpacity>
           <TouchableOpacity 
             style={styles.quickAction}
             onPress={() => navigation.navigate('AchievementsPage')}
           >
             <Ionicons name="trophy" size={24} color="#f39c12" />
-            <Text style={styles.quickActionText}>Achievements</Text>
+            <Text style={[styles.quickActionText, { color: colors.textSecondary }]}>Achievements</Text>
           </TouchableOpacity>
           <TouchableOpacity 
             style={styles.quickAction}
             onPress={() => navigation.navigate('SettingsPage')}
           >
-            <Ionicons name="settings" size={24} color="#666" />
-            <Text style={styles.quickActionText}>Settings</Text>
+            <Ionicons name="settings" size={24} color={colors.textTertiary} />
+            <Text style={[styles.quickActionText, { color: colors.textSecondary }]}>Settings</Text>
           </TouchableOpacity>
           <TouchableOpacity 
             style={styles.quickAction}
             onPress={() => Alert.alert('Share Profile', `Check out my fitness journey! Level ${userLevel.level} with ${userStats.total_workouts} workouts completed!`)}
           >
             <Ionicons name="share-social" size={24} color="#44bd32" />
-            <Text style={styles.quickActionText}>Share</Text>
+            <Text style={[styles.quickActionText, { color: colors.textSecondary }]}>Share</Text>
           </TouchableOpacity>
         </View>
 
         {/* Progress Overview */}
-        <View style={styles.section}>
+        <View style={[styles.section, { backgroundColor: colors.surface }]}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Weekly Progress</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Weekly Progress</Text>
             <TouchableOpacity onPress={() => Alert.alert('Progress Details', `Weekly Goal: ${weeklyProgress.weekly_workouts}/${weeklyProgress.weekly_goal || 5} workouts\nCurrent Streak: ${weeklyProgress.current_streak} days`)}>
-              <Text style={styles.viewAllText}>View Details</Text>
+              <Text style={[styles.viewAllText, { color: colors.primary }]}>View Details</Text>
             </TouchableOpacity>
           </View>
           <View style={styles.progressOverview}>
             <View style={styles.progressItem}>
-              <View style={styles.progressCircle}>
-                <Text style={styles.progressValue}>{weeklyProgress.workout_progress}%</Text>
+              <View style={[styles.progressCircle, { backgroundColor: colors.primary }]}>
+                <Text style={[styles.progressValue, { color: colors.textInverse }]}>{weeklyProgress.workout_progress}%</Text>
               </View>
-              <Text style={styles.progressLabel}>Workout Goal</Text>
+              <Text style={[styles.progressLabel, { color: colors.textSecondary }]}>Workout Goal</Text>
             </View>
             <View style={styles.progressItem}>
               <View style={[styles.progressCircle, { backgroundColor: '#f39c12' }]}>
-                <Text style={styles.progressValue}>{weeklyProgress.current_streak}</Text>
+                <Text style={[styles.progressValue, { color: colors.textInverse }]}>{weeklyProgress.current_streak}</Text>
               </View>
-              <Text style={styles.progressLabel}>Day Streak</Text>
+              <Text style={[styles.progressLabel, { color: colors.textSecondary }]}>Day Streak</Text>
             </View>
             <View style={styles.progressItem}>
               <View style={[styles.progressCircle, { backgroundColor: '#44bd32' }]}>
-                <Text style={styles.progressValue}>{weeklyProgress.weekly_workouts}</Text>
+                <Text style={[styles.progressValue, { color: colors.textInverse }]}>{weeklyProgress.weekly_workouts}</Text>
               </View>
-              <Text style={styles.progressLabel}>This Week</Text>
+              <Text style={[styles.progressLabel, { color: colors.textSecondary }]}>This Week</Text>
             </View>
           </View>
         </View>
 
         {/* Body Measurements */}
-        <View style={styles.section}>
+        <View style={[styles.section, { backgroundColor: colors.surface }]}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Body Measurements</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Body Measurements</Text>
             <TouchableOpacity onPress={() => navigation.navigate('BodyMeasurementsScreen')}>
-              <Ionicons name="add" size={24} color="#0097e6" />
+              <Ionicons name="add" size={24} color={colors.primary} />
             </TouchableOpacity>
           </View>
           <View style={styles.measurementGrid}>
-            <View style={styles.measurementCard}>
-              <Text style={styles.measurementValue}>{bodyMeasurements.weight || '--'}</Text>
-              <Text style={styles.measurementUnit}>kg</Text>
-              <Text style={styles.measurementLabel}>Weight</Text>
-              <Text style={styles.measurementChange}>{bodyMeasurements.weight ? 'Track progress' : 'Add measurement'}</Text>
+            <View style={[styles.measurementCard, { backgroundColor: colors.surfaceSecondary }]}>
+              <Text style={[styles.measurementValue, { color: colors.text }]}>{bodyMeasurements.weight || '--'}</Text>
+              <Text style={[styles.measurementUnit, { color: colors.textSecondary }]}>kg</Text>
+              <Text style={[styles.measurementLabel, { color: colors.text }]}>Weight</Text>
+              <Text style={[styles.measurementChange, { color: colors.success }]}>{bodyMeasurements.weight ? 'Track progress' : 'Add measurement'}</Text>
             </View>
-            <View style={styles.measurementCard}>
-              <Text style={styles.measurementValue}>{bodyMeasurements.body_fat_percentage || '--'}</Text>
-              <Text style={styles.measurementUnit}>%</Text>
-              <Text style={styles.measurementLabel}>Body Fat</Text>
-              <Text style={styles.measurementChange}>{bodyMeasurements.body_fat_percentage ? 'Track progress' : 'Add measurement'}</Text>
+            <View style={[styles.measurementCard, { backgroundColor: colors.surfaceSecondary }]}>
+              <Text style={[styles.measurementValue, { color: colors.text }]}>{bodyMeasurements.body_fat_percentage || '--'}</Text>
+              <Text style={[styles.measurementUnit, { color: colors.textSecondary }]}>%</Text>
+              <Text style={[styles.measurementLabel, { color: colors.text }]}>Body Fat</Text>
+              <Text style={[styles.measurementChange, { color: colors.success }]}>{bodyMeasurements.body_fat_percentage ? 'Track progress' : 'Add measurement'}</Text>
             </View>
           </View>
         </View>
 
         {/* User Statistics Section */}
-        <View style={styles.section}>
+        <View style={[styles.section, { backgroundColor: colors.surface }]}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>All-Time Stats</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>All-Time Stats</Text>
             <TouchableOpacity onPress={() => Alert.alert('Analytics', `Total Stats:\n• ${userStats.total_workouts} workouts\n• ${userStats.total_calories_burned} calories burned\n• ${formatTime(userStats.total_workout_time)} total time\n• Level ${userLevel.level} (${userLevel.experience_points} XP)`)}>
-              <Text style={styles.viewAllText}>Analytics</Text>
+              <Text style={[styles.viewAllText, { color: colors.primary }]}>Analytics</Text>
             </TouchableOpacity>
           </View>
           
           <View style={styles.statsContainer}>
             <View style={styles.statItem}>
-              <Text style={styles.statValue}>{userStats.total_workouts}</Text>
-              <Text style={styles.statLabel}>Workouts</Text>
+              <Text style={[styles.statValue, { color: colors.primary }]}>{userStats.total_workouts}</Text>
+              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Workouts</Text>
               <View style={styles.statTrend}>
-                <Ionicons name="trending-up" size={12} color="#44bd32" />
-                <Text style={styles.statTrendText}>+12%</Text>
+                <Ionicons name="trending-up" size={12} color={colors.success} />
+                <Text style={[styles.statTrendText, { color: colors.success }]}>+12%</Text>
               </View>
             </View>
             
             <View style={styles.statItem}>
-              <Text style={styles.statValue}>{userStats.total_calories_burned}</Text>
-              <Text style={styles.statLabel}>Calories</Text>
+              <Text style={[styles.statValue, { color: colors.primary }]}>{userStats.total_calories_burned}</Text>
+              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Calories</Text>
               <View style={styles.statTrend}>
-                <Ionicons name="trending-up" size={12} color="#44bd32" />
-                <Text style={styles.statTrendText}>+8%</Text>
+                <Ionicons name="trending-up" size={12} color={colors.success} />
+                <Text style={[styles.statTrendText, { color: colors.success }]}>+8%</Text>
               </View>
             </View>
             
             <View style={styles.statItem}>
-              <Text style={styles.statValue}>{formatTime(userStats.total_workout_time)}</Text>
-              <Text style={styles.statLabel}>Time</Text>
+              <Text style={[styles.statValue, { color: colors.primary }]}>{formatTime(userStats.total_workout_time)}</Text>
+              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Time</Text>
               <View style={styles.statTrend}>
-                <Ionicons name="trending-up" size={12} color="#44bd32" />
-                <Text style={styles.statTrendText}>+15%</Text>
+                <Ionicons name="trending-up" size={12} color={colors.success} />
+                <Text style={[styles.statTrendText, { color: colors.success }]}>+15%</Text>
               </View>
             </View>
             
             <View style={styles.statItem}>
-              <Text style={styles.statValue}>{userLevel.experience_points}</Text>
-              <Text style={styles.statLabel}>XP</Text>
+              <Text style={[styles.statValue, { color: colors.primary }]}>{userLevel.experience_points}</Text>
+              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>XP</Text>
               <View style={styles.statTrend}>
                 <Ionicons name="star" size={12} color="#f39c12" />
-                <Text style={styles.statTrendText}>Lvl {userLevel.level}</Text>
+                <Text style={[styles.statTrendText, { color: colors.warning }]}>Lvl {userLevel.level}</Text>
               </View>
             </View>
           </View>
         </View>
         
         {/* Recent Activity */}
-        <View style={styles.section}>
+        <View style={[styles.section, { backgroundColor: colors.surface }]}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Recent Activity</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Recent Activity</Text>
             <TouchableOpacity onPress={() => Alert.alert('Recent Activity', `You have ${recentActivity.length} recent activities. Check your workout history for more details!`)}>
-              <Text style={styles.viewAllText}>View All</Text>
+              <Text style={[styles.viewAllText, { color: colors.primary }]}>View All</Text>
             </TouchableOpacity>
           </View>
           <View style={styles.activityList}>
             {recentActivity.length === 0 ? (
-              <Text style={styles.noDataText}>No recent activity. Start working out to see your progress!</Text>
+              <Text style={[styles.noDataText, { color: colors.textSecondary }]}>No recent activity. Start working out to see your progress!</Text>
             ) : (
               recentActivity.slice(0, 3).map((activity, index) => (
-                <View key={index} style={styles.activityItem}>
+                <View key={index} style={[styles.activityItem, { borderBottomColor: colors.borderLight }]}>
                   <View style={[styles.activityIcon, { 
-                    backgroundColor: activity.type === 'workout' ? '#E53935' : 
-                                   activity.type === 'achievement' ? '#f39c12' : '#44bd32' 
+                    backgroundColor: activity.type === 'workout' ? colors.primary : 
+                                   activity.type === 'achievement' ? colors.warning : colors.success 
                   }]}>
                     <Ionicons name={activity.icon || 'fitness'} size={16} color="#fff" />
                   </View>
                   <View style={styles.activityInfo}>
-                    <Text style={styles.activityTitle}>{activity.title}</Text>
-                    <Text style={styles.activityTime}>
+                    <Text style={[styles.activityTitle, { color: colors.text }]}>{activity.title}</Text>
+                    <Text style={[styles.activityTime, { color: colors.textSecondary }]}>
                       {new Date(activity.time).toLocaleDateString()}
                       {activity.duration && ` • ${activity.duration} min`}
                     </Text>
                   </View>
                   {activity.calories && (
-                    <Text style={styles.activityCalories}>{activity.calories} cal</Text>
+                    <Text style={[styles.activityCalories, { color: colors.primary }]}>{activity.calories} cal</Text>
                   )}
                   {activity.weight && (
-                    <Text style={styles.activityCalories}>{activity.weight} kg</Text>
+                    <Text style={[styles.activityCalories, { color: colors.primary }]}>{activity.weight} kg</Text>
                   )}
                 </View>
               ))
@@ -415,20 +417,20 @@ export default function ProfilePage({ route }) {
 
         {/* Recent Badges */}
         {userBadges.length > 0 && (
-          <View style={styles.section}>
+          <View style={[styles.section, { backgroundColor: colors.surface }]}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Recent Badges</Text>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Recent Badges</Text>
               <TouchableOpacity onPress={() => Alert.alert('Badges', `You have earned ${userBadges.length} badges! Keep working out to unlock more.`)}>
-                <Text style={styles.viewAllText}>View All</Text>
+                <Text style={[styles.viewAllText, { color: colors.primary }]}>View All</Text>
               </TouchableOpacity>
             </View>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               {userBadges.map((badge, index) => (
                 <View key={index} style={styles.badgeItem}>
-                  <View style={[styles.badgeIcon, { backgroundColor: badge.color || '#0097e6' }]}>
+                  <View style={[styles.badgeIcon, { backgroundColor: badge.color || colors.primary }]}>
                     <Ionicons name={badge.icon || 'trophy'} size={20} color="#fff" />
                   </View>
-                  <Text style={styles.badgeName}>{badge.name}</Text>
+                  <Text style={[styles.badgeName, { color: colors.textSecondary }]}>{badge.name}</Text>
                 </View>
               ))}
             </ScrollView>
@@ -436,33 +438,34 @@ export default function ProfilePage({ route }) {
         )}
 
         {/* Workout Calendar Preview */}
-        <View style={styles.section}>
+        <View style={[styles.section, { backgroundColor: colors.surface }]}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>This Week</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>This Week</Text>
             <TouchableOpacity onPress={() => Alert.alert('Calendar', 'Full calendar view coming soon!')}>
-              <Text style={styles.viewAllText}>Full Calendar</Text>
+              <Text style={[styles.viewAllText, { color: colors.primary }]}>Full Calendar</Text>
             </TouchableOpacity>
           </View>
           <View style={styles.weekCalendar}>
             {weeklyCalendar.length > 0 ? weeklyCalendar.map((day, index) => (
               <View key={index} style={styles.dayItem}>
-                <Text style={styles.dayLabel}>{day.day}</Text>
+                <Text style={[styles.dayLabel, { color: colors.textSecondary }]}>{day.day}</Text>
                 <View style={[
                   styles.dayCircle, 
+                  { backgroundColor: colors.surfaceSecondary },
                   day.hasWorkout && styles.completedDay,
                   day.isToday && styles.todayDay
                 ]}>
                   {day.hasWorkout && <Ionicons name="checkmark" size={12} color="#fff" />}
-                  {day.isToday && !day.hasWorkout && <Text style={styles.todayText}>•</Text>}
-                  {day.workoutCount > 1 && <Text style={styles.workoutCount}>{day.workoutCount}</Text>}
+                  {day.isToday && !day.hasWorkout && <Text style={[styles.todayText, { color: colors.text }]}>•</Text>}
+                  {day.workoutCount > 1 && <Text style={[styles.workoutCount, { color: colors.textInverse }]}>{day.workoutCount}</Text>}
                 </View>
               </View>
             )) : (
               ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, index) => (
                 <View key={index} style={styles.dayItem}>
-                  <Text style={styles.dayLabel}>{day}</Text>
-                  <View style={styles.dayCircle}>
-                    <Text style={styles.todayText}>•</Text>
+                  <Text style={[styles.dayLabel, { color: colors.textSecondary }]}>{day}</Text>
+                  <View style={[styles.dayCircle, { backgroundColor: colors.surfaceSecondary }]}>
+                    <Text style={[styles.todayText, { color: colors.text }]}>•</Text>
                   </View>
                 </View>
               ))
@@ -471,45 +474,45 @@ export default function ProfilePage({ route }) {
         </View>
         
         {/* Achievements Section */}
-        <View style={styles.section}>
+        <View style={[styles.section, { backgroundColor: colors.surface }]}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Achievements</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Achievements</Text>
             <Ionicons name="trophy-outline" size={24} color="gold" />
           </View>
           {achievements.length === 0 ? (
-            <Text style={styles.noDataText}>No achievements yet. Keep working out to earn medals!</Text>
+            <Text style={[styles.noDataText, { color: colors.textSecondary }]}>No achievements yet. Keep working out to earn medals!</Text>
           ) : (
             achievements.map((medal, idx) => (
               <View key={idx} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10, marginLeft: 15 }}>
                 <Ionicons name="medal-outline" size={24} color={medal.level === 'gold' ? 'gold' : medal.level === 'silver' ? '#C0C0C0' : '#cd7f32'} style={{ marginRight: 10 }} />
-                <Text style={{ fontWeight: 'bold', marginRight: 8 }}>{medal.description}</Text>
-                <Text style={{ color: '#888' }}>({medal.level} medal)</Text>
+                <Text style={[styles.achievementText, { color: colors.text, fontWeight: 'bold', marginRight: 8 }]}>{medal.description}</Text>
+                <Text style={[styles.achievementLevel, { color: colors.textSecondary }]}>({medal.level} medal)</Text>
               </View>
             ))
           )}
         </View>
         
         {/* Personal Best Section */}
-        <View style={styles.section}>
+        <View style={[styles.section, { backgroundColor: colors.surface }]}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Personal Best</Text>
-            <Ionicons name="chevron-forward" size={24} color="black" />
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Personal Best</Text>
+            <Ionicons name="chevron-forward" size={24} color={colors.text} />
           </View>
           
           {personalBests.length === 0 ? (
-            <Text style={styles.noDataText}>No personal bests yet. Complete workouts to see your records!</Text>
+            <Text style={[styles.noDataText, { color: colors.textSecondary }]}>No personal bests yet. Complete workouts to see your records!</Text>
           ) : (
             personalBests.slice(0, 3).map((best, index) => (
-              <View key={index} style={styles.exerciseRow}>
-                <View style={styles.weightBadge}>
-                  <Text style={styles.weightValue}>{best.weight}</Text>
-                  <Text style={styles.weightUnit}>Kg</Text>
+              <View key={index} style={[styles.exerciseRow, { borderBottomColor: colors.borderLight }]}>
+                <View style={[styles.weightBadge, { backgroundColor: colors.background }]}>
+                  <Text style={[styles.weightValue, { color: colors.textInverse }]}>{best.weight}</Text>
+                  <Text style={[styles.weightUnit, { color: colors.textInverse }]}>Kg</Text>
                 </View>
                 
-                <Text style={styles.exerciseName}>{best.exercise_name}</Text>
+                <Text style={[styles.exerciseName, { color: colors.text }]}>{best.exercise_name}</Text>
                 
                 <View style={styles.actionButtons}>
-                  <Text style={styles.divider}>|</Text>
+                  <Text style={[styles.divider, { color: colors.border }]}>|</Text>
                   <TouchableOpacity onPress={() => {
                     Alert.prompt(
                       'Update Personal Best',
@@ -529,7 +532,7 @@ export default function ProfilePage({ route }) {
                       best.weight.toString()
                     );
                   }}>
-                    <Ionicons name="add" size={24} color="black" />
+                    <Ionicons name="add" size={24} color={colors.text} />
                   </TouchableOpacity>
                 </View>
               </View>
@@ -540,7 +543,7 @@ export default function ProfilePage({ route }) {
             style={styles.viewMoreButton}
             onPress={() => Alert.alert('Personal Bests', `You have ${personalBests.length} personal records. Keep pushing your limits!`)}
           >
-            <Text style={styles.viewMoreText}>View More</Text>
+            <Text style={[styles.viewMoreText, { color: colors.textSecondary }]}>View More</Text>
           </TouchableOpacity>
         </View>
         
@@ -555,36 +558,40 @@ export default function ProfilePage({ route }) {
         visible={editModalVisible}
         onRequestClose={() => setEditModalVisible(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Edit Profile</Text>
+        <View style={[styles.modalOverlay, { backgroundColor: colors.overlay }]}>
+          <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>Edit Profile</Text>
             
             <TextInput
-              style={styles.modalInput}
+              style={[styles.modalInput, { backgroundColor: colors.input, borderColor: colors.inputBorder, color: colors.text }]}
               placeholder="Display Name"
+              placeholderTextColor={colors.inputPlaceholder}
               value={editForm.display_name}
               onChangeText={(text) => setEditForm({...editForm, display_name: text})}
             />
             
             <TextInput
-              style={styles.modalInput}
+              style={[styles.modalInput, { backgroundColor: colors.input, borderColor: colors.inputBorder, color: colors.text }]}
               placeholder="Height (cm)"
+              placeholderTextColor={colors.inputPlaceholder}
               value={editForm.height}
               onChangeText={(text) => setEditForm({...editForm, height: text})}
               keyboardType="numeric"
             />
             
             <TextInput
-              style={styles.modalInput}
+              style={[styles.modalInput, { backgroundColor: colors.input, borderColor: colors.inputBorder, color: colors.text }]}
               placeholder="Weight (kg)"
+              placeholderTextColor={colors.inputPlaceholder}
               value={editForm.weight}
               onChangeText={(text) => setEditForm({...editForm, weight: text})}
               keyboardType="numeric"
             />
             
             <TextInput
-              style={styles.modalInput}
+              style={[styles.modalInput, { backgroundColor: colors.input, borderColor: colors.inputBorder, color: colors.text }]}
               placeholder="Age"
+              placeholderTextColor={colors.inputPlaceholder}
               value={editForm.age}
               onChangeText={(text) => setEditForm({...editForm, age: text})}
               keyboardType="numeric"
@@ -592,17 +599,17 @@ export default function ProfilePage({ route }) {
             
             <View style={styles.modalButtons}>
               <TouchableOpacity 
-                style={[styles.modalButton, styles.cancelButton]}
+                style={[styles.modalButton, styles.cancelButton, { backgroundColor: colors.buttonSecondary }]}
                 onPress={() => setEditModalVisible(false)}
               >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
+                <Text style={[styles.cancelButtonText, { color: colors.text }]}>Cancel</Text>
               </TouchableOpacity>
               
               <TouchableOpacity 
-                style={[styles.modalButton, styles.saveButton]}
+                style={[styles.modalButton, styles.saveButton, { backgroundColor: colors.primary }]}
                 onPress={handleSaveProfile}
               >
-                <Text style={styles.saveButtonText}>Save</Text>
+                <Text style={[styles.saveButtonText, { color: colors.textInverse }]}>Save</Text>
               </TouchableOpacity>
             </View>
           </View>

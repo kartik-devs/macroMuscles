@@ -4,6 +4,9 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 
+// Import theme
+import { useTheme } from '../theme/ThemeContext';
+
 // Screens
 import Dashboard from '../screen/Dashboard';
 import DietPage from '../screen/DietPage';
@@ -55,6 +58,8 @@ function SocialStackScreen() {
 const Tab = createBottomTabNavigator();
 
 export default function TabNavigator() {
+  const { colors } = useTheme();
+  
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -75,11 +80,11 @@ export default function TabNavigator() {
 
           return <Ionicons name={iconName} size={size} color={color} />;
         },
-        tabBarActiveTintColor: '#E53935',
-        tabBarInactiveTintColor: '#888',
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.textTertiary,
         tabBarStyle: {
-          backgroundColor: '#000',
-          borderTopColor: '#111',
+          backgroundColor: colors.tabBar,
+          borderTopColor: colors.tabBarBorder,
           height: 58,
           paddingBottom: 6,
           paddingTop: 6,

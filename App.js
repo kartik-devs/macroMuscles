@@ -4,6 +4,9 @@ import { navigationRef } from './src/navigation/navigationRef';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
 
+// Import theme
+import { ThemeProvider, useTheme } from './src/theme/ThemeContext';
+
 import Splash from './src/screen/splash';
 import Login from './src/screen/login/Login';
 import Register from './src/screen/login/Register';
@@ -32,8 +35,9 @@ import { initAuth, getToken } from './src/api/auth';
 
 const Stack = createNativeStackNavigator();
 
-export default function App() {
+function ThemedApp() {
   const [initialRoute, setInitialRoute] = useState('Splash');
+  const { colors } = useTheme();
 
   useEffect(() => {
     const bootstrap = async () => {
@@ -51,12 +55,12 @@ export default function App() {
 
   return (
     <NavigationContainer ref={navigationRef}>
-      <StatusBar style="light" />
+      <StatusBar style={colors.statusBar} />
       <Stack.Navigator
         initialRouteName={initialRoute}
         screenOptions={{
           headerShown: false,
-          contentStyle: { backgroundColor: '#1a1a1a' }
+          contentStyle: { backgroundColor: colors.background }
         }}
       >
         <Stack.Screen name="Splash" component={Splash} />
@@ -93,5 +97,13 @@ export default function App() {
         
       </Stack.Navigator>
     </NavigationContainer>
+  );
+}
+
+export default function App() {
+  return (
+    <ThemeProvider>
+      <ThemedApp />
+    </ThemeProvider>
   );
 }

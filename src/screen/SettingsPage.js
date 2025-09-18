@@ -73,6 +73,65 @@ export default function SettingsPage({ navigation }) {
     );
   };
 
+  const handleDeleteProfile = () => {
+    Alert.alert(
+      'Delete Profile',
+      'Are you sure you want to delete your profile? This action cannot be undone and will permanently remove all your data.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            // Second confirmation
+            Alert.alert(
+              'Final Confirmation',
+              'This will permanently delete your profile and all associated data. Are you absolutely sure?',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Yes, Delete',
+                  style: 'destructive',
+                  onPress: async () => {
+                    try {
+                      // Clear all user data from AsyncStorage
+                      await AsyncStorage.multiRemove([
+                        'token',
+                        'userId',
+                        'userProfile',
+                        'appSettings',
+                        'appTheme',
+                        'workoutHistory',
+                        'userStats',
+                        'userGoals',
+                        'dailyNutrition',
+                        'challengeProgress',
+                        'personalBests',
+                        'sharedWorkouts',
+                        'workoutComments',
+                        'workoutLikes',
+                        'friends'
+                      ]);
+                      
+                      // Navigate to login screen
+                      navigation.reset({
+                        index: 0,
+                        routes: [{ name: 'Login' }],
+                      });
+                    } catch (error) {
+                      console.error('Error deleting profile:', error);
+                      Alert.alert('Error', 'Failed to delete profile. Please try again.');
+                    }
+                  },
+                },
+              ]
+            );
+          },
+        },
+      ]
+    );
+  };
+
   const SettingItem = ({ icon, title, subtitle, onPress, rightComponent }) => (
     <TouchableOpacity style={styles.settingItem} onPress={onPress}>
       <View style={styles.settingLeft}>
@@ -205,6 +264,16 @@ export default function SettingsPage({ navigation }) {
           />
         </View>
 
+        {/* Danger Zone */}
+        <View style={[styles.section, { backgroundColor: darkMode ? '#2a2a2a' : '#fff' }]}>
+          <Text style={[styles.sectionTitle, { color: darkMode ? '#fff' : '#000' }]}>Danger Zone</Text>
+          
+          <TouchableOpacity style={styles.deleteButton} onPress={handleDeleteProfile}>
+            <Ionicons name="trash" size={24} color="#e74c3c" />
+            <Text style={styles.deleteText}>Delete Profile</Text>
+          </TouchableOpacity>
+        </View>
+
         {/* Support */}
         <View style={[styles.section, { backgroundColor: darkMode ? '#2a2a2a' : '#fff' }]}>
           <Text style={[styles.sectionTitle, { color: darkMode ? '#fff' : '#000' }]}>Support</Text>
@@ -301,6 +370,22 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
   },
   logoutText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#e74c3c',
+    marginLeft: 10,
+  },
+  deleteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 15,
+    borderWidth: 1,
+    borderColor: '#e74c3c',
+    borderRadius: 8,
+    backgroundColor: 'rgba(231, 76, 60, 0.1)',
+  },
+  deleteText: {
     fontSize: 16,
     fontWeight: '600',
     color: '#e74c3c',

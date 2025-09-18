@@ -18,6 +18,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { saveWorkoutHistory } from '../../api/workouts';
 import { getCurrentUserId } from '../../api/auth';
 import { updateUserStatistics } from '../../api/profile';
+import UniversalWorkoutGIF from '../../components/UniversalWorkoutGIF';
+import { getWorkoutData } from '../../data/workoutAnimations';
 
 const { width } = Dimensions.get('window');
 
@@ -65,6 +67,34 @@ export default function ArmsWorkout({ navigation }) {
       maxReps: 12,
       muscle: 'triceps',
     },
+    {
+      id: '7',
+      name: 'Skull Crusher',
+      sets: [{ weight: 20, reps: 12, completed: false }],
+      maxReps: 15,
+      muscle: 'triceps',
+    },
+    {
+      id: '8',
+      name: 'Cable Curl',
+      sets: [{ weight: 15, reps: 12, completed: false }],
+      maxReps: 15,
+      muscle: 'biceps',
+    },
+    {
+      id: '9',
+      name: 'Tricep Rope Pushdown',
+      sets: [{ weight: 20, reps: 12, completed: false }],
+      maxReps: 15,
+      muscle: 'triceps',
+    },
+    {
+      id: '10',
+      name: 'Concentration Curl',
+      sets: [{ weight: 12, reps: 10, completed: false }],
+      maxReps: 12,
+      muscle: 'biceps',
+    },
   ]);
 
   const [editMode, setEditMode] = useState(false);
@@ -73,6 +103,8 @@ export default function ArmsWorkout({ navigation }) {
   const [newExerciseMaxReps, setNewExerciseMaxReps] = useState('');
   const [newExerciseMuscle, setNewExerciseMuscle] = useState('biceps');
   const [workoutStarted, setWorkoutStarted] = useState(false);
+  const [animationModalVisible, setAnimationModalVisible] = useState(false);
+  const [selectedExerciseForAnimation, setSelectedExerciseForAnimation] = useState(null);
   
   // Animation values
   const fadeAnim = useRef(new Animated.Value(1)).current;
@@ -81,6 +113,38 @@ export default function ArmsWorkout({ navigation }) {
   // Filter exercises by muscle group
   const bicepsExercises = exercises.filter(ex => ex.muscle === 'biceps');
   const tricepsExercises = exercises.filter(ex => ex.muscle === 'triceps');
+  
+  // Debug: Log exercises to console
+  console.log('Total exercises:', exercises.length);
+  console.log('Biceps exercises:', bicepsExercises.length);
+  console.log('Triceps exercises:', tricepsExercises.length);
+  console.log('All exercises:', exercises.map(ex => ex.name));
+
+  // Function to show exercise animation
+  const showExerciseAnimation = (exerciseName) => {
+    // Map exercise names to animation keys
+    const animationMap = {
+      'Skull Crusher': 'skullCrusher',
+      // Add more exercises here as you create their animations
+    };
+
+    const animationKey = animationMap[exerciseName];
+    if (animationKey) {
+      setSelectedExerciseForAnimation(animationKey);
+      setAnimationModalVisible(true);
+    } else {
+      Alert.alert('Animation Not Available', `Animation for ${exerciseName} is not available yet.`);
+    }
+  };
+
+  // Function to check if exercise has animation
+  const hasAnimation = (exerciseName) => {
+    const animationMap = {
+      'Skull Crusher': 'skullCrusher',
+      // Add more exercises here as you create their animations
+    };
+    return animationMap.hasOwnProperty(exerciseName);
+  };
 
   const addSet = (exerciseId) => {
     setExercises(exercises.map(exercise => {
@@ -277,14 +341,24 @@ export default function ArmsWorkout({ navigation }) {
           <View style={[styles.muscleDot, { backgroundColor: exercise.muscle === 'biceps' ? '#FF9500' : '#9C27B0' }]} />
           <Text style={styles.exerciseName}>{exercise.name}</Text>
         </View>
-        {editMode && (
-          <TouchableOpacity 
-            style={styles.removeExerciseButton}
-            onPress={() => removeExercise(exercise.id)}
-          >
-            <Ionicons name="trash-outline" size={20} color="#E53935" />
-          </TouchableOpacity>
-        )}
+        <View style={styles.exerciseActions}>
+          {hasAnimation(exercise.name) && (
+            <TouchableOpacity 
+              style={styles.animationButton}
+              onPress={() => showExerciseAnimation(exercise.name)}
+            >
+              <Ionicons name="play-circle-outline" size={24} color="#007AFF" />
+            </TouchableOpacity>
+          )}
+          {editMode && (
+            <TouchableOpacity 
+              style={styles.removeExerciseButton}
+              onPress={() => removeExercise(exercise.id)}
+            >
+              <Ionicons name="trash-outline" size={20} color="#E53935" />
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
       
       <View style={styles.setsHeader}>
@@ -426,11 +500,16 @@ export default function ArmsWorkout({ navigation }) {
       ) : (
         <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollView}>
           <View style={styles.workoutContainer}>
+            {/* Debug Info */}
+            <View style={styles.debugInfo}>
+              <Text style={styles.debugText}>Total Exercises: {exercises.length}</Text>
+              <Text style={styles.debugText}>Biceps: {bicepsExercises.length} | Triceps: {tricepsExercises.length}</Text>
+            </View>
             {/* Biceps Section */}
             <View style={styles.muscleSection}>
               <View style={styles.muscleTitleContainer}>
                 <View style={[styles.muscleDot, { backgroundColor: '#FF9500' }]} />
-                <Text style={styles.muscleTitle}>BICEPS</Text>
+                <Text style={styles.muscleTitle}>BICEPS ({bicepsExercises.length})</Text>
               </View>
               {bicepsExercises.map(renderExerciseCard)}
             </View>
@@ -438,7 +517,7 @@ export default function ArmsWorkout({ navigation }) {
             <View style={styles.muscleSection}>
               <View style={styles.muscleTitleContainer}>
                 <View style={[styles.muscleDot, { backgroundColor: '#9C27B0' }]} />
-                <Text style={styles.muscleTitle}>TRICEPS</Text>
+                <Text style={styles.muscleTitle}>TRICEPS ({tricepsExercises.length})</Text>
               </View>
               {tricepsExercises.map(renderExerciseCard)}
             </View>
@@ -539,6 +618,40 @@ export default function ArmsWorkout({ navigation }) {
                 <Text style={styles.saveButtonText}>Add</Text>
               </TouchableOpacity>
             </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Exercise Animation Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={animationModalVisible}
+        onRequestClose={() => setAnimationModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.animationModalContent}>
+            <View style={styles.animationModalHeader}>
+              <Text style={styles.animationModalTitle}>Exercise Demonstration</Text>
+              <TouchableOpacity 
+                style={styles.closeButton}
+                onPress={() => setAnimationModalVisible(false)}
+              >
+                <Ionicons name="close" size={24} color="#666" />
+              </TouchableOpacity>
+            </View>
+            
+            {selectedExerciseForAnimation && (
+              <UniversalWorkoutGIF
+                {...getWorkoutData(selectedExerciseForAnimation)}
+                showInstructions={true}
+                showTips={true}
+                showSafety={true}
+                expandable={true}
+                animationHeight={300}
+                style={styles.animationContainer}
+              />
+            )}
           </View>
         </View>
       </Modal>
@@ -684,6 +797,15 @@ const styles = StyleSheet.create({
   exerciseNameContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    flex: 1,
+  },
+  exerciseActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  animationButton: {
+    padding: 8,
+    marginRight: 8,
   },
   exerciseName: {
     fontSize: 16,
@@ -907,5 +1029,40 @@ const styles = StyleSheet.create({
   saveButtonText: {
     color: 'white',
     fontWeight: '500',
+  },
+  animationModalContent: {
+    backgroundColor: 'white',
+    margin: 20,
+    borderRadius: 12,
+    padding: 20,
+    maxHeight: '80%',
+  },
+  animationModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  animationModalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  closeButton: {
+    padding: 4,
+  },
+  animationContainer: {
+    marginTop: 8,
+  },
+  debugInfo: {
+    backgroundColor: '#333',
+    padding: 10,
+    marginBottom: 10,
+    borderRadius: 8,
+  },
+  debugText: {
+    color: '#fff',
+    fontSize: 12,
+    textAlign: 'center',
   },
 });

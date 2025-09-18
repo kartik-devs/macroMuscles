@@ -19,8 +19,10 @@ import { getCurrentUserId } from '../api/auth';
 import { Calendar } from 'react-native-calendars';
 import { useFocusEffect } from '@react-navigation/native';
 import { getChallengeProgress } from '../api/challenges';
+import { useTheme } from '../theme/ThemeContext';
 
 export default function Dashboard({ navigation }) {
+  const { colors } = useTheme();
   const [userName, setUserName] = useState('User');
   const [userId, setUserId] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -284,55 +286,58 @@ export default function Dashboard({ navigation }) {
   const currentYear = currentDate.getFullYear();
 
   return (
-    <SafeAreaView style={[dashboardStyles.container, { backgroundColor: '#000' }]}>
-      <StatusBar barStyle="light-content" backgroundColor="#000" />
+    <SafeAreaView style={[dashboardStyles.container, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle={colors.statusBar} backgroundColor={colors.background} />
       
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        showsVerticalScrollIndicator={false}
+        nestedScrollEnabled={true}
+      >
         {/* Header Section */}
-        <View style={[dashboardStyles.header, { backgroundColor: '#000' }]}>
+        <View style={[dashboardStyles.header, { backgroundColor: colors.background }]}>
           <View>
-            <Text style={[dashboardStyles.welcomeText, { color: '#aaa' }]}>Hello, welcome back</Text>
-            <Text style={[dashboardStyles.userName, { color: '#fff' }]}>{userName}</Text>
+            <Text style={[dashboardStyles.welcomeText, { color: colors.textSecondary }]}>Hello, welcome back</Text>
+            <Text style={[dashboardStyles.userName, { color: colors.text }]}>{userName}</Text>
           </View>
         </View>
 
         {/* User Stats Section */}
         <View style={[dashboardStyles.sectionContainer, { paddingHorizontal: 20 }]}>
-          <Text style={[dashboardStyles.sectionTitle, { color: '#fff' }]}>Your Progress</Text>
+          <Text style={[dashboardStyles.sectionTitle, { color: colors.text }]}>Your Progress</Text>
           <View style={dashboardStyles.statsContainer}>
-            <View style={dashboardStyles.statCard}>
-              <Ionicons name="fitness-outline" size={24} color="#fff" />
-              <Text style={[dashboardStyles.statNumber, { color: '#fff' }]}>{userStats.total_workouts}</Text>
-              <Text style={[dashboardStyles.statLabel, { color: '#bbb' }]}>Workouts</Text>
+            <View style={[dashboardStyles.statCard, { backgroundColor: colors.surface }]}>
+              <Ionicons name="fitness-outline" size={24} color={colors.text} />
+              <Text style={[dashboardStyles.statNumber, { color: colors.text }]}>{userStats.total_workouts}</Text>
+              <Text style={[dashboardStyles.statLabel, { color: colors.textSecondary }]}>Workouts</Text>
             </View>
             
-            <View style={dashboardStyles.statCard}>
-              <Ionicons name="flame-outline" size={24} color="#fff" />
-              <Text style={[dashboardStyles.statNumber, { color: '#fff' }]}>{userStats.total_calories_burned}</Text>
-              <Text style={[dashboardStyles.statLabel, { color: '#bbb' }]}>Calories</Text>
+            <View style={[dashboardStyles.statCard, { backgroundColor: colors.surface }]}>
+              <Ionicons name="flame-outline" size={24} color={colors.text} />
+              <Text style={[dashboardStyles.statNumber, { color: colors.text }]}>{userStats.total_calories_burned}</Text>
+              <Text style={[dashboardStyles.statLabel, { color: colors.textSecondary }]}>Calories</Text>
             </View>
             
-            <View style={dashboardStyles.statCard}>
-              <Ionicons name="trending-up-outline" size={24} color="#fff" />
-              <Text style={[dashboardStyles.statNumber, { color: '#fff' }]}>{userStats.current_streak}</Text>
-              <Text style={[dashboardStyles.statLabel, { color: '#bbb' }]}>Streak</Text>
+            <View style={[dashboardStyles.statCard, { backgroundColor: colors.surface }]}>
+              <Ionicons name="trending-up-outline" size={24} color={colors.text} />
+              <Text style={[dashboardStyles.statNumber, { color: colors.text }]}>{userStats.current_streak}</Text>
+              <Text style={[dashboardStyles.statLabel, { color: colors.textSecondary }]}>Streak</Text>
             </View>
           </View>
         </View>
 
         {/* Search Bar */}
-        <View style={[dashboardStyles.searchContainer, { backgroundColor: '#111' }]}>
-          <Ionicons name="search-outline" size={20} color="#bbb" style={dashboardStyles.searchIcon} />
+        <View style={[dashboardStyles.searchContainer, { backgroundColor: colors.surface }]}>
+          <Ionicons name="search-outline" size={20} color={colors.textSecondary} style={dashboardStyles.searchIcon} />
           <TextInput
-            style={[dashboardStyles.searchInput, { color: '#fff' }]}
+            style={[dashboardStyles.searchInput, { color: colors.text }]}
             placeholder="Search"
-            placeholderTextColor="#666"
+            placeholderTextColor={colors.textTertiary}
           />
         </View>
 
         {/* Popular Workouts Section */}
         <View style={[dashboardStyles.sectionContainer, { paddingHorizontal: 20 }]}>
-          <Text style={[dashboardStyles.sectionTitle, { color: '#fff' }]}>Quick Start</Text>
+          <Text style={[dashboardStyles.sectionTitle, { color: colors.text }]}>Quick Start</Text>
           <FlatList
             data={popularWorkouts}
             renderItem={renderWorkoutItem}
@@ -340,12 +345,13 @@ export default function Dashboard({ navigation }) {
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={dashboardStyles.workoutList}
+            nestedScrollEnabled={true}
           />
         </View>
 
         {/* Popular Challenges Section */}
         <View style={[dashboardStyles.sectionContainer, { paddingHorizontal: 20 }]}>
-          <Text style={[dashboardStyles.sectionTitle, { color: '#fff' }]}>Popular Challenges</Text>
+          <Text style={[dashboardStyles.sectionTitle, { color: colors.text }]}>Popular Challenges</Text>
           <FlatList
             data={popularChallenges}
             renderItem={renderChallengeItem}
@@ -353,51 +359,43 @@ export default function Dashboard({ navigation }) {
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={dashboardStyles.challengeList}
+            nestedScrollEnabled={true}
           />
         </View>
 
         {/* Recent Workouts Section */}
         {recentWorkouts.length > 0 && (
-          <View style={dashboardStyles.sectionContainer}>
-            <Text style={dashboardStyles.sectionTitle}>Recent Workouts</Text>
+          <View style={[dashboardStyles.sectionContainer, { backgroundColor: colors.surface }]}>
+            <Text style={[dashboardStyles.sectionTitle, { color: colors.text }]}>Recent Workouts</Text>
             <FlatList
               data={recentWorkouts}
               renderItem={renderRecentWorkout}
               keyExtractor={(item, index) => index.toString()}
               showsVerticalScrollIndicator={false}
+              nestedScrollEnabled={true}
+              scrollEnabled={false}
             />
           </View>
         )}
 
         {/* Consistency Report Section */}
-        <View style={dashboardStyles.sectionContainer}>
-          <Text style={dashboardStyles.sectionTitle}>Consistency Report</Text>
-          <View style={dashboardStyles.calendarContainer}>
+        <View style={[dashboardStyles.sectionContainer, { backgroundColor: colors.surface }]}>
+          <Text style={[dashboardStyles.sectionTitle, { color: colors.text }]}>Consistency Report</Text>
+          <View style={[dashboardStyles.calendarContainer, { backgroundColor: colors.surface }]}>
             <View style={dashboardStyles.calendarHeader}>
               <TouchableOpacity>
-                <Ionicons name="chevron-back" size={24} color="#333" />
+                <Ionicons name="chevron-back" size={24} color={colors.text} />
               </TouchableOpacity>
-              <Text style={dashboardStyles.calendarTitle}>{currentMonth} {currentYear}</Text>
+              <Text style={[dashboardStyles.calendarTitle, { color: colors.text }]}>{currentMonth} {currentYear}</Text>
               <TouchableOpacity>
-                <Ionicons name="chevron-forward" size={24} color="#333" />
+                <Ionicons name="chevron-forward" size={24} color={colors.text} />
               </TouchableOpacity>
             </View>
             {/* Calendar Days Header removed, replaced by Calendar component */}
             <Calendar
               markingType={'custom'}
               markedDates={markedDates}
-              theme={{
-                todayTextColor: '#e91e63',
-                arrowColor: '#0097e6',
-                textSectionTitleColor: '#666',
-                selectedDayBackgroundColor: '#44bd32',
-                selectedDayTextColor: '#fff',
-                dotColor: '#44bd32',
-                'stylesheet.day.basic': {
-                  base: { height: 36, width: 36, alignItems: 'center', justifyContent: 'center' },
-                  text: { fontSize: 14 }
-                }
-              }}
+              theme={colors.calendar}
               style={{ borderRadius: 12 }}
             />
           </View>

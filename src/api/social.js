@@ -130,9 +130,16 @@ export const shareWorkout = async (userId, workoutId, caption, visibility = 'fri
 export const getSocialFeed = async (userId) => {
   try {
     const headers = await getAuthHeaders();
-    const response = await axios.get(`${API_URL}/social/feed/${userId}`, { headers });
+    const response = await axios.get(`${API_URL}/social/feed/${userId}`, { 
+      headers,
+      timeout: 10000 // 10 second timeout
+    });
     return response.data;
   } catch (error) {
+    console.error('Social feed API error:', error);
+    if (error.code === 'ECONNABORTED') {
+      throw new Error('Request timeout - please check your connection');
+    }
     throw error.response ? error.response.data : { message: 'Network error' };
   }
 };
