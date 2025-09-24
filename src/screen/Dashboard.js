@@ -184,19 +184,27 @@ export default function Dashboard({ navigation }) {
   ];
 
   const handleWorkoutPress = async (item) => {
+    switch (item.title) {
+      case 'Chest and Back':
+        return navigation.navigate('ChestBackWorkout');
+      case 'Arms':
+        return navigation.navigate('ArmsWorkout');
+      case 'Legs':
+        return navigation.navigate('LegsWorkout');
+      case 'Shoulders':
+        return navigation.navigate('ShouldersWorkout');
+    }
+  
+    // 2. Fallback to quick-start / generic flow
     try {
       const id = await getCurrentUserId();
       if (!id) {
-        navigation.navigate('Workout', { screen: 'WorkoutMain' });
-        return;
+        return navigation.navigate('Workout', { screen: 'WorkoutMain' });
       }
       const profile = await getUserProfile(id);
       if (!profile?.workout_split) {
-        navigation.navigate('Workout', { screen: 'WorkoutMain' });
-        return;
+        return navigation.navigate('Workout', { screen: 'WorkoutMain' });
       }
-      // Build a quick workout for today based on user's split
-      // Reuse MonthlyWorkoutPlan logic indirectly by navigating into workout stack
       navigation.navigate('Workout', {
         screen: 'MonthlyWorkoutPlan',
         params: {
@@ -204,7 +212,7 @@ export default function Dashboard({ navigation }) {
           includeCardio: profile.include_cardio || false,
           cardioType: profile.cardio_type || 'mid',
           quickStart: true,
-        }
+        },
       });
     } catch (e) {
       navigation.navigate('Workout', { screen: 'WorkoutMain' });

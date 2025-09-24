@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -19,82 +19,49 @@ import { saveWorkoutHistory } from '../../api/workouts';
 import { getCurrentUserId } from '../../api/auth';
 import { updateUserStatistics } from '../../api/profile';
 import UniversalWorkoutGIF from '../../components/UniversalWorkoutGIF';
-import { getWorkoutData } from '../../data/workoutAnimations';
+import { getWorkoutData, workoutAnimations } from '../../data/workoutAnimations';
 
 const { width } = Dimensions.get('window');
 
+const CyclingImage = ({ images, size = 56, onPress }) => {
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setIndex((prev) => (prev + 1) % images.length);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [images.length]);
+
+  if (!images.length) return null;
+
+  // Slight left offset for inner image so it is less offcentered
+  const innerOffset = -4;
+
+  return (
+    <TouchableOpacity onPress={onPress}>
+      <View style={[styles.cycleImageContainer, { width: size, height: size, borderRadius: size / 2 }]}>
+        <Image
+          source={images[index]}
+          style={{ width: size, height: size, borderRadius: size / 2, marginLeft: innerOffset }}
+        />
+      </View>
+    </TouchableOpacity>
+  );
+};
+
 export default function ArmsWorkout({ navigation }) {
   const [exercises, setExercises] = useState([
-    {
-      id: '1',
-      name: 'Barbell Curl',
-      sets: [{ weight: 25, reps: 12, completed: false }],
-      maxReps: 15,
-      muscle: 'biceps',
-    },
-    {
-      id: '2',
-      name: 'Hammer Curl',
-      sets: [{ weight: 15, reps: 12, completed: false }],
-      maxReps: 15,
-      muscle: 'biceps',
-    },
-    {
-      id: '3',
-      name: 'Preacher Curl',
-      sets: [{ weight: 20, reps: 10, completed: false }],
-      maxReps: 12,
-      muscle: 'biceps',
-    },
-    {
-      id: '4',
-      name: 'Tricep Pushdown',
-      sets: [{ weight: 30, reps: 12, completed: false }],
-      maxReps: 15,
-      muscle: 'triceps',
-    },
-    {
-      id: '5',
-      name: 'Overhead Tricep Extension',
-      sets: [{ weight: 20, reps: 12, completed: false }],
-      maxReps: 15,
-      muscle: 'triceps',
-    },
-    {
-      id: '6',
-      name: 'Dips',
-      sets: [{ weight: 0, reps: 10, completed: false }],
-      maxReps: 12,
-      muscle: 'triceps',
-    },
-    {
-      id: '7',
-      name: 'Skull Crusher',
-      sets: [{ weight: 20, reps: 12, completed: false }],
-      maxReps: 15,
-      muscle: 'triceps',
-    },
-    {
-      id: '8',
-      name: 'Cable Curl',
-      sets: [{ weight: 15, reps: 12, completed: false }],
-      maxReps: 15,
-      muscle: 'biceps',
-    },
-    {
-      id: '9',
-      name: 'Tricep Rope Pushdown',
-      sets: [{ weight: 20, reps: 12, completed: false }],
-      maxReps: 15,
-      muscle: 'triceps',
-    },
-    {
-      id: '10',
-      name: 'Concentration Curl',
-      sets: [{ weight: 12, reps: 10, completed: false }],
-      maxReps: 12,
-      muscle: 'biceps',
-    },
+    { id: '1', name: 'Barbell Curl', sets: [{ weight: 25, reps: 12, completed: false }], maxReps: 15, muscle: 'biceps' },
+    { id: '2', name: 'Hammer Curl', sets: [{ weight: 15, reps: 12, completed: false }], maxReps: 15, muscle: 'biceps' },
+    { id: '3', name: 'Preacher Curl', sets: [{ weight: 20, reps: 10, completed: false }], maxReps: 12, muscle: 'biceps' },
+    { id: '4', name: 'Tricep Pushdown', sets: [{ weight: 30, reps: 12, completed: false }], maxReps: 15, muscle: 'triceps' },
+    { id: '5', name: 'Overhead Tricep Extension', sets: [{ weight: 20, reps: 12, completed: false }], maxReps: 15, muscle: 'triceps' },
+    { id: '6', name: 'Dips', sets: [{ weight: 0, reps: 10, completed: false }], maxReps: 12, muscle: 'triceps' },
+    { id: '7', name: 'Skull Crusher', sets: [{ weight: 20, reps: 12, completed: false }], maxReps: 15, muscle: 'triceps' },
+    { id: '8', name: 'Cable Curl', sets: [{ weight: 15, reps: 12, completed: false }], maxReps: 15, muscle: 'biceps' },
+    { id: '9', name: 'Tricep Rope Pushdown', sets: [{ weight: 20, reps: 12, completed: false }], maxReps: 15, muscle: 'triceps' },
+    { id: '10', name: 'Concentration Curl', sets: [{ weight: 12, reps: 10, completed: false }], maxReps: 12, muscle: 'biceps' },
   ]);
 
   const [editMode, setEditMode] = useState(false);
@@ -105,29 +72,22 @@ export default function ArmsWorkout({ navigation }) {
   const [workoutStarted, setWorkoutStarted] = useState(false);
   const [animationModalVisible, setAnimationModalVisible] = useState(false);
   const [selectedExerciseForAnimation, setSelectedExerciseForAnimation] = useState(null);
-  
-  // Animation values
+
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const slideAnim = useRef(new Animated.Value(0)).current;
 
-  // Filter exercises by muscle group
   const bicepsExercises = exercises.filter(ex => ex.muscle === 'biceps');
   const tricepsExercises = exercises.filter(ex => ex.muscle === 'triceps');
-  
-  // Debug: Log exercises to console
-  console.log('Total exercises:', exercises.length);
-  console.log('Biceps exercises:', bicepsExercises.length);
-  console.log('Triceps exercises:', tricepsExercises.length);
-  console.log('All exercises:', exercises.map(ex => ex.name));
 
-  // Function to show exercise animation
+  const showExercisePopup = (exerciseKey) => {
+    setSelectedExerciseForAnimation(exerciseKey);
+    setAnimationModalVisible(true);
+  };
+
   const showExerciseAnimation = (exerciseName) => {
-    // Map exercise names to animation keys
     const animationMap = {
       'Skull Crusher': 'skullCrusher',
-      // Add more exercises here as you create their animations
     };
-
     const animationKey = animationMap[exerciseName];
     if (animationKey) {
       setSelectedExerciseForAnimation(animationKey);
@@ -137,11 +97,9 @@ export default function ArmsWorkout({ navigation }) {
     }
   };
 
-  // Function to check if exercise has animation
   const hasAnimation = (exerciseName) => {
     const animationMap = {
       'Skull Crusher': 'skullCrusher',
-      // Add more exercises here as you create their animations
     };
     return animationMap.hasOwnProperty(exerciseName);
   };
@@ -152,14 +110,13 @@ export default function ArmsWorkout({ navigation }) {
         const lastSet = exercise.sets[exercise.sets.length - 1];
         return {
           ...exercise,
-          sets: [...exercise.sets, { 
-            weight: lastSet.weight, 
-            reps: lastSet.reps, 
-            completed: false 
+          sets: [...exercise.sets, {
+            weight: lastSet.weight,
+            reps: lastSet.reps,
+            completed: false
           }]
         };
       }
-      
       return exercise;
     }));
   };
@@ -215,7 +172,6 @@ export default function ArmsWorkout({ navigation }) {
       if (exercise.id === exerciseId) {
         return {
           ...exercise,
-          
           sets: exercise.sets.map((set, index) => {
             if (index === setIndex) {
               return { ...set, reps: parseInt(reps) || 0 };
@@ -230,7 +186,7 @@ export default function ArmsWorkout({ navigation }) {
 
   const addNewExercise = () => {
     if (newExerciseName.trim() === '') return;
-    
+
     const newExercise = {
       id: Date.now().toString(),
       name: newExerciseName,
@@ -238,7 +194,7 @@ export default function ArmsWorkout({ navigation }) {
       maxReps: parseInt(newExerciseMaxReps) || 12,
       muscle: newExerciseMuscle,
     };
-    
+
     setExercises([...exercises, newExercise]);
     setNewExerciseName('');
     setNewExerciseMaxReps('');
@@ -250,16 +206,13 @@ export default function ArmsWorkout({ navigation }) {
   };
 
   const startWorkout = () => {
-    // Reset all sets to not completed
     setExercises(exercises.map(exercise => ({
       ...exercise,
       sets: exercise.sets.map(set => ({ ...set, completed: false }))
     })));
-    
-    // Exit edit mode if active
+
     if (editMode) setEditMode(false);
-    
-    // Animate and set workout started
+
     Animated.sequence([
       Animated.timing(fadeAnim, {
         toValue: 0,
@@ -291,23 +244,23 @@ export default function ArmsWorkout({ navigation }) {
   const completeWorkout = async () => {
     try {
       const completedSets = exercises.reduce(
-        (acc, ex) => acc + ex.sets.filter(set => set.completed).length, 
+        (acc, ex) => acc + ex.sets.filter(set => set.completed).length,
         0
       );
-      const duration = completedSets * 1; // 1 minute per set
+      const duration = completedSets * 1; // 1 min/set
       const caloriesBurned = completedSets * 10;
       const userId = await getCurrentUserId();
       if (userId) {
         await saveWorkoutHistory({
           user_id: userId,
           workout_type: 'Arms',
-          duration: duration,
-          calories_burned: caloriesBurned
+          duration,
+          calories_burned: caloriesBurned,
         });
         await updateUserStatistics({
           user_id: userId,
           workout_duration: duration,
-          calories_burned: caloriesBurned
+          calories_burned: caloriesBurned,
         });
       } else {
         Alert.alert('Not Logged In', 'Log in to save your workout history.');
@@ -315,184 +268,139 @@ export default function ArmsWorkout({ navigation }) {
       setWorkoutStarted(false);
       navigation.goBack();
     } catch (error) {
-      console.error('Error completing workout:', error);
+      console.error('Error saving workout:', error);
       Alert.alert('Error', 'Failed to save your workout history.');
     }
   };
 
-  // Calculate completion percentage
   const calculateProgress = () => {
     const totalSets = exercises.reduce((acc, ex) => acc + ex.sets.length, 0);
     const completedSets = exercises.reduce(
-      (acc, ex) => acc + ex.sets.filter(set => set.completed).length, 
+      (acc, ex) => acc + ex.sets.filter(set => set.completed).length,
       0
     );
-    
     return totalSets > 0 ? (completedSets / totalSets) * 100 : 0;
   };
-  
+
   const progressPercentage = calculateProgress();
 
-  // Render an exercise card
-  const renderExerciseCard = (exercise) => (
-    <View key={exercise.id} style={styles.exerciseCard}>
-      <View style={styles.exerciseHeader}>
-        <View style={styles.exerciseNameContainer}>
-          <View style={[styles.muscleDot, { backgroundColor: exercise.muscle === 'biceps' ? '#FF9500' : '#9C27B0' }]} />
-          <Text style={styles.exerciseName}>{exercise.name}</Text>
-        </View>
-        <View style={styles.exerciseActions}>
-          {hasAnimation(exercise.name) && (
-            <TouchableOpacity 
-              style={styles.animationButton}
-              onPress={() => showExerciseAnimation(exercise.name)}
-            >
-              <Ionicons name="play-circle-outline" size={24} color="#007AFF" />
-            </TouchableOpacity>
-          )}
-          {editMode && (
-            <TouchableOpacity 
-              style={styles.removeExerciseButton}
-              onPress={() => removeExercise(exercise.id)}
-            >
-              <Ionicons name="trash-outline" size={20} color="#E53935" />
-            </TouchableOpacity>
+  const renderExerciseCard = (exercise) => {
+    const animKey = Object.keys(workoutAnimations).find(k => workoutAnimations[k].exerciseName === exercise.name);
+    const images = animKey ? workoutAnimations[animKey].images : [];
+
+    const borderColor = exercise.muscle === 'biceps' ? '#00c853' : '#fbc02d';
+
+    return (
+      <View key={exercise.id} style={styles.exerciseCard}>
+        <View style={[styles.exerciseHeader, { justifyContent: 'space-between' }]}>
+          <View style={styles.exerciseNameContainer}>
+            <View style={[styles.muscleDot, { backgroundColor: borderColor }]} />
+            <Text style={styles.exerciseName}>{exercise.name}</Text>
+          </View>
+          {images.length > 0 && (
+            <CyclingImage images={images} size={56} onPress={() => showExercisePopup(animKey)} />
           )}
         </View>
-      </View>
-      
-      <View style={styles.setsHeader}>
-        <Text style={styles.setsHeaderText}>SET</Text>
-        <Text style={styles.setsHeaderText}>KG</Text>
-        <Text style={styles.setsHeaderText}>REPS</Text>
-        <Text style={styles.setsHeaderText}></Text>
-      </View>
-      
-      {exercise.sets.map((set, setIndex) => (
-        <Animated.View 
-          key={setIndex} 
-          style={[
-            styles.setRow,
-            { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }
-          ]}
-        >
-          <Text style={styles.setText}>{setIndex + 1}</Text>
-          
-          <TextInput
-            style={[styles.weightInput, set.completed && styles.inputCompleted]}
-            value={set.weight.toString()}
-            onChangeText={(text) => updateSetWeight(exercise.id, setIndex, text)}
-            keyboardType="numeric"
-            editable={!set.completed}
-          />
-          
-          <TextInput
-            style={[styles.repsInput, set.completed && styles.inputCompleted]}
-            value={set.reps.toString()}
-            onChangeText={(text) => updateSetReps(exercise.id, setIndex, text)}
-            keyboardType="numeric"
-            editable={!set.completed}
-          />
-          
-          <TouchableOpacity
-            style={[
-              styles.checkButton, 
-              set.completed && styles.checkButtonCompleted
-            ]}
-            onPress={() => toggleSetCompletion(exercise.id, setIndex)}
+
+        <View style={styles.setsHeader}>
+          <Text style={styles.setsHeaderText}>SET</Text>
+          <Text style={styles.setsHeaderText}>KG</Text>
+          <Text style={styles.setsHeaderText}>REPS</Text>
+          <Text style={styles.setsHeaderText}></Text>
+        </View>
+
+        {exercise.sets.map((set, setIndex) => (
+          <Animated.View
+            key={setIndex}
+            style={[styles.setRow, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}
           >
-            {set.completed ? (
-              <Ionicons name="checkmark" size={18} color="white" />
-            ) : (
-              <Text style={styles.checkButtonText}>DO</Text>
-            )}
-          </TouchableOpacity>
-          
-          {editMode && (
+            <Text style={styles.setText}>{setIndex + 1}</Text>
+
+            <TextInput
+              style={[styles.weightInput, set.completed && styles.inputCompleted]}
+              value={set.weight.toString()}
+              onChangeText={(text) => updateSetWeight(exercise.id, setIndex, text)}
+              keyboardType="numeric"
+              editable={!set.completed}
+            />
+
+            <TextInput
+              style={[styles.repsInput, set.completed && styles.inputCompleted]}
+              value={set.reps.toString()}
+              onChangeText={(text) => updateSetReps(exercise.id, setIndex, text)}
+              keyboardType="numeric"
+              editable={!set.completed}
+            />
+
             <TouchableOpacity
-              style={styles.removeSetButton}
-              onPress={() => removeSet(exercise.id, setIndex)}
+              style={[styles.checkButton, set.completed && styles.checkButtonCompleted]}
+              onPress={() => toggleSetCompletion(exercise.id, setIndex)}
             >
-              <Ionicons name="remove-circle-outline" size={20} color="#E53935" />
+              {set.completed ? (
+                <Ionicons name="checkmark" size={18} color="white" />
+              ) : (
+                <Text style={styles.checkButtonText}>DO</Text>
+              )}
             </TouchableOpacity>
-          )}
-        </Animated.View>
-      ))}
-      
-      {/* Max Reps */}
-      <View style={styles.maxRepsRow}>
-        <Text style={styles.maxRepsText}>Max Reps: {exercise.maxReps}</Text>
+
+            {editMode && (
+              <TouchableOpacity
+                style={styles.removeSetButton}
+                onPress={() => removeSet(exercise.id, setIndex)}
+              >
+                <Ionicons name="remove-circle-outline" size={20} color="#E53935" />
+              </TouchableOpacity>
+            )}
+          </Animated.View>
+        ))}
+
+        <View style={styles.maxRepsRow}>
+          <Text style={styles.maxRepsText}>Max Reps: {exercise.maxReps}</Text>
+        </View>
+
+        <TouchableOpacity style={styles.addSetButton} onPress={() => addSet(exercise.id)}>
+          <Ionicons name="add-circle-outline" size={20} color="#555" />
+          <Text style={styles.addSetText}>Add Set</Text>
+        </TouchableOpacity>
       </View>
-      
-      {/* Add Set Button */}
-      <TouchableOpacity 
-        style={styles.addSetButton}
-        onPress={() => addSet(exercise.id)}
-      >
-        <Ionicons name="add-circle-outline" size={20} color="#555" />
-        <Text style={styles.addSetText}>Add Set</Text>
-      </TouchableOpacity>
-    </View>
-  );
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#1a1a1a" />
-      
+
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={24} color="white" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Arms Workout</Text>
-        <TouchableOpacity 
-          style={styles.editButton}
-          onPress={() => setEditMode(!editMode)}
-        >
+        <TouchableOpacity style={styles.editButton} onPress={() => setEditMode(!editMode)}>
           <Text style={styles.editButtonText}>{editMode ? 'Done' : 'Edit'}</Text>
         </TouchableOpacity>
       </View>
-      
+
       {/* Progress Bar */}
       {workoutStarted && (
         <View style={styles.progressContainer}>
           <View style={styles.progressBar}>
-            <Animated.View 
-              style={[
-                styles.progressFill, 
-                { width: `${progressPercentage}%` }
-              ]} 
-            />
+            <Animated.View style={[styles.progressFill, { width: `${progressPercentage}%` }]} />
           </View>
           <Text style={styles.progressText}>{Math.round(progressPercentage)}% Complete</Text>
         </View>
       )}
-      
+
       {!workoutStarted ? (
         <View style={styles.startSection}>
-          <Image 
-            source={require('../../assets/kettle.jpg')} 
-            style={styles.workoutImage} 
-            resizeMode="cover"
-          />
+          <Image source={require('../../assets/kettle.jpg')} style={styles.workoutImage} resizeMode="cover" />
           <View style={styles.workoutInfoContainer}>
             <Text style={styles.workoutInfoTitle}>Arms Workout</Text>
             <Text style={styles.workoutInfoText}>
               A focused workout targeting biceps and triceps for stronger, more defined arms.
-              {'\n\n'}
-              • 6 exercises
-              {'\n'}
-              • Estimated time: 30-45 min
-              {'\n'}
-              • Difficulty: Intermediate
+              {'\n\n'}• 6 exercises{'\n'}• Estimated time: 30-45 min{'\n'}• Difficulty: Intermediate
             </Text>
-            <TouchableOpacity 
-              style={styles.startButton}
-              onPress={startWorkout}
-            >
+            <TouchableOpacity style={styles.startButton} onPress={startWorkout}>
               <Text style={styles.startButtonText}>START WORKOUT</Text>
             </TouchableOpacity>
           </View>
@@ -500,61 +408,50 @@ export default function ArmsWorkout({ navigation }) {
       ) : (
         <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollView}>
           <View style={styles.workoutContainer}>
-            {/* Debug Info */}
             <View style={styles.debugInfo}>
               <Text style={styles.debugText}>Total Exercises: {exercises.length}</Text>
-              <Text style={styles.debugText}>Biceps: {bicepsExercises.length} | Triceps: {tricepsExercises.length}</Text>
+              <Text style={styles.debugText}>
+                Biceps: {bicepsExercises.length} | Triceps: {tricepsExercises.length}
+              </Text>
             </View>
-            {/* Biceps Section */}
+
             <View style={styles.muscleSection}>
               <View style={styles.muscleTitleContainer}>
-                <View style={[styles.muscleDot, { backgroundColor: '#FF9500' }]} />
+                <View style={[styles.muscleDot, { backgroundColor: '#00c853' }]} />
                 <Text style={styles.muscleTitle}>BICEPS ({bicepsExercises.length})</Text>
               </View>
               {bicepsExercises.map(renderExerciseCard)}
             </View>
-            {/* Triceps Section */}
+
             <View style={styles.muscleSection}>
               <View style={styles.muscleTitleContainer}>
-                <View style={[styles.muscleDot, { backgroundColor: '#9C27B0' }]} />
+                <View style={[styles.muscleDot, { backgroundColor: '#fbc02d' }]} />
                 <Text style={styles.muscleTitle}>TRICEPS ({tricepsExercises.length})</Text>
               </View>
               {tricepsExercises.map(renderExerciseCard)}
             </View>
-            {/* Complete Workout Button */}
-            <TouchableOpacity 
-              style={styles.completeButton}
-              onPress={completeWorkout}
-            >
+
+            <TouchableOpacity style={styles.completeButton} onPress={completeWorkout}>
               <Text style={styles.completeButtonText}>COMPLETE WORKOUT</Text>
             </TouchableOpacity>
-            {/* Add Exercise Button */}
+
             {editMode && (
-              <TouchableOpacity 
-                style={styles.addExerciseButton}
-                onPress={() => setModalVisible(true)}
-              >
+              <TouchableOpacity style={styles.addExerciseButton} onPress={() => setModalVisible(true)}>
                 <Ionicons name="add-circle" size={24} color="white" />
                 <Text style={styles.addExerciseText}>Add Exercise</Text>
               </TouchableOpacity>
             )}
-            {/* Bottom spacing */}
+
             <View style={{ height: 80 }} />
           </View>
         </ScrollView>
       )}
-      
+
       {/* Add Exercise Modal */}
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
-      >
+      <Modal animationType="slide" transparent visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Add New Exercise</Text>
-            
             <TextInput
               style={styles.modalInput}
               placeholder="Exercise Name"
@@ -562,7 +459,6 @@ export default function ArmsWorkout({ navigation }) {
               value={newExerciseName}
               onChangeText={setNewExerciseName}
             />
-            
             <TextInput
               style={styles.modalInput}
               placeholder="Max Reps"
@@ -571,50 +467,42 @@ export default function ArmsWorkout({ navigation }) {
               onChangeText={setNewExerciseMaxReps}
               keyboardType="numeric"
             />
-            
             <View style={styles.muscleTypeContainer}>
               <Text style={styles.muscleTypeLabel}>Muscle Group:</Text>
               <View style={styles.muscleTypeButtons}>
-                <TouchableOpacity 
-                  style={[
-                    styles.muscleTypeButton, 
-                    newExerciseMuscle === 'biceps' && styles.muscleTypeButtonActive
-                  ]}
+                <TouchableOpacity
+                  style={[styles.muscleTypeButton, newExerciseMuscle === 'biceps' && styles.muscleTypeButtonActive]}
                   onPress={() => setNewExerciseMuscle('biceps')}
                 >
-                  <Text style={[
-                    styles.muscleTypeButtonText,
-                    newExerciseMuscle === 'biceps' && styles.muscleTypeButtonTextActive
-                  ]}>Biceps</Text>
+                  <Text
+                    style={[
+                      styles.muscleTypeButtonText,
+                      newExerciseMuscle === 'biceps' && styles.muscleTypeButtonTextActive,
+                    ]}
+                  >
+                    Biceps
+                  </Text>
                 </TouchableOpacity>
-                
-                <TouchableOpacity 
-                  style={[
-                    styles.muscleTypeButton, 
-                    newExerciseMuscle === 'triceps' && styles.muscleTypeButtonActive
-                  ]}
+                <TouchableOpacity
+                  style={[styles.muscleTypeButton, newExerciseMuscle === 'triceps' && styles.muscleTypeButtonActive]}
                   onPress={() => setNewExerciseMuscle('triceps')}
                 >
-                  <Text style={[
-                    styles.muscleTypeButtonText,
-                    newExerciseMuscle === 'triceps' && styles.muscleTypeButtonTextActive
-                  ]}>Triceps</Text>
+                  <Text
+                    style={[
+                      styles.muscleTypeButtonText,
+                      newExerciseMuscle === 'triceps' && styles.muscleTypeButtonTextActive,
+                    ]}
+                  >
+                    Triceps
+                  </Text>
                 </TouchableOpacity>
               </View>
             </View>
-            
             <View style={styles.modalButtons}>
-              <TouchableOpacity 
-                style={[styles.modalButton, styles.cancelButton]}
-                onPress={() => setModalVisible(false)}
-              >
+              <TouchableOpacity style={[styles.modalButton, styles.cancelButton]} onPress={() => setModalVisible(false)}>
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={[styles.modalButton, styles.saveButton]}
-                onPress={addNewExercise}
-              >
+              <TouchableOpacity style={[styles.modalButton, styles.saveButton]} onPress={addNewExercise}>
                 <Text style={styles.saveButtonText}>Add</Text>
               </TouchableOpacity>
             </View>
@@ -623,35 +511,25 @@ export default function ArmsWorkout({ navigation }) {
       </Modal>
 
       {/* Exercise Animation Modal */}
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={animationModalVisible}
-        onRequestClose={() => setAnimationModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.animationModalContent}>
-            <View style={styles.animationModalHeader}>
-              <Text style={styles.animationModalTitle}>Exercise Demonstration</Text>
-              <TouchableOpacity 
-                style={styles.closeButton}
-                onPress={() => setAnimationModalVisible(false)}
-              >
-                <Ionicons name="close" size={24} color="#666" />
-              </TouchableOpacity>
-            </View>
-            
-            {selectedExerciseForAnimation && (
-              <UniversalWorkoutGIF
-                {...getWorkoutData(selectedExerciseForAnimation)}
-                showInstructions={true}
-                showTips={true}
-                showSafety={true}
-                expandable={true}
-                animationHeight={300}
-                style={styles.animationContainer}
-              />
-            )}
+      <Modal animationType="fade" transparent visible={animationModalVisible} onRequestClose={() => setAnimationModalVisible(false)}>
+        <View style={styles.popupOverlay}>
+          <View style={styles.popupContent}>
+            <TouchableOpacity style={styles.popupClose} onPress={() => setAnimationModalVisible(false)}>
+              <Ionicons name="close" size={24} color="#fff" />
+            </TouchableOpacity>
+            <ScrollView contentContainerStyle={styles.popupScroll}>
+              {selectedExerciseForAnimation && (
+                <UniversalWorkoutGIF
+                  {...getWorkoutData(selectedExerciseForAnimation)}
+                  showInstructions
+                  showTips
+                  showSafety
+                  expandable
+                  animationHeight={300}
+                  style={styles.popupGif}
+                />
+              )}
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -660,10 +538,7 @@ export default function ArmsWorkout({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#121212',
-  },
+  container: { flex: 1, backgroundColor: '#121212' },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -674,109 +549,43 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#333',
   },
-  backButton: {
-    padding: 8,
+  backButton: { padding: 8 },
+  cycleImageContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    borderWidth: 3,
+    overflow: 'hidden',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 12,
+    backgroundColor: '#121212',
   },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: 'white',
-  },
+  headerTitle: { fontSize: 18, fontWeight: 'bold', color: 'white' },
   editButton: {
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
   },
-  editButtonText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: 'white',
-  },
-  progressContainer: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#1a1a1a',
-  },
-  progressBar: {
-    height: 6,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 3,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: '#E53935',
-    borderRadius: 3,
-  },
-  progressText: {
-    marginTop: 8,
-    fontSize: 12,
-    color: '#bbb',
-    textAlign: 'right',
-  },
-  scrollView: {
-    flex: 1,
-  },
-  startSection: {
-    margin: 16,
-    borderRadius: 12,
-    overflow: 'hidden',
-    backgroundColor: '#1e1e1e',
-  },
-  workoutImage: {
-    width: '100%',
-    height: 200,
-  },
-  workoutInfoContainer: {
-    padding: 16,
-  },
-  workoutInfoTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: 'white',
-    marginBottom: 12,
-  },
-  workoutInfoText: {
-    fontSize: 14,
-    lineHeight: 22,
-    color: '#bbb',
-    marginBottom: 20,
-  },
-  startButton: {
-    backgroundColor: '#E53935',
-    paddingVertical: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  startButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  workoutContainer: {
-    padding: 16,
-  },
-  muscleSection: {
-    marginBottom: 24,
-  },
-  muscleTitleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  muscleDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    marginRight: 8,
-  },
-  muscleTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: 'white',
-    letterSpacing: 1,
-  },
+  editButtonText: { fontSize: 14, fontWeight: '500', color: 'white' },
+  progressContainer: { paddingHorizontal: 16, paddingVertical: 12, backgroundColor: '#1a1a1a' },
+  progressBar: { height: 6, backgroundColor: 'rgba(255, 255, 255, 0.1)', borderRadius: 3, overflow: 'hidden' },
+  progressFill: { height: '100%', backgroundColor: '#E53935', borderRadius: 3 },
+  progressText: { marginTop: 8, fontSize: 12, color: '#bbb', textAlign: 'right' },
+  scrollView: { flex: 1 },
+  startSection: { margin: 16, borderRadius: 12, overflow: 'hidden', backgroundColor: '#1e1e1e' },
+  workoutImage: { width: '100%', height: 200 },
+  workoutInfoContainer: { padding: 16 },
+  workoutInfoTitle: { fontSize: 24, fontWeight: 'bold', color: 'white', marginBottom: 12 },
+  workoutInfoText: { fontSize: 14, lineHeight: 22, color: '#bbb', marginBottom: 20 },
+  startButton: { backgroundColor: '#E53935', paddingVertical: 16, borderRadius: 8, alignItems: 'center' },
+  startButtonText: { color: 'white', fontSize: 16, fontWeight: 'bold' },
+  workoutContainer: { padding: 16 },
+  muscleSection: { marginBottom: 24 },
+  muscleTitleContainer: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+  muscleDot: { width: 12, height: 12, borderRadius: 6, marginRight: 8 },
+  muscleTitle: { fontSize: 16, fontWeight: 'bold', color: 'white', letterSpacing: 1 },
   exerciseCard: {
     backgroundColor: '#1e1e1e',
     borderRadius: 12,
@@ -788,59 +597,16 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 4,
   },
-  exerciseHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  exerciseNameContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  exerciseActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  animationButton: {
-    padding: 8,
-    marginRight: 8,
-  },
-  exerciseName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: 'white',
-  },
-  removeExerciseButton: {
-    padding: 4,
-  },
-  setsHeader: {
-    flexDirection: 'row',
-    paddingBottom: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#333',
-    marginBottom: 8,
-  },
-  setsHeaderText: {
-    flex: 1,
-    fontSize: 12,
-    color: '#888',
-    textAlign: 'center',
-    fontWeight: '600',
-  },
-  setRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#333',
-  },
-  setText: {
-    flex: 1,
-    textAlign: 'center',
-    color: '#bbb',
-  },
+  exerciseHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
+  exerciseNameContainer: { flexDirection: 'row', alignItems: 'center', flex: 1 },
+  exerciseActions: { flexDirection: 'row', alignItems: 'center' },
+  animationButton: { padding: 8, marginRight: 8 },
+  exerciseName: { fontSize: 16, fontWeight: '600', color: 'white' },
+  removeExerciseButton: { padding: 4 },
+  setsHeader: { flexDirection: 'row', paddingBottom: 8, borderBottomWidth: 1, borderBottomColor: '#333', marginBottom: 8 },
+  setsHeaderText: { flex: 1, fontSize: 12, color: '#888', textAlign: 'center', fontWeight: '600' },
+  setRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#333' },
+  setText: { flex: 1, textAlign: 'center', color: '#bbb' },
   weightInput: {
     flex: 1,
     borderWidth: 1,
@@ -863,10 +629,7 @@ const styles = StyleSheet.create({
     color: 'white',
     backgroundColor: '#2a2a2a',
   },
-  inputCompleted: {
-    backgroundColor: 'rgba(76, 175, 80, 0.2)',
-    borderColor: '#4CAF50',
-  },
+  inputCompleted: { backgroundColor: 'rgba(76, 175, 80, 0.2)', borderColor: '#4CAF50' },
   checkButton: {
     flex: 1,
     height: 36,
@@ -878,68 +641,17 @@ const styles = StyleSheet.create({
     marginHorizontal: 4,
     backgroundColor: 'transparent',
   },
-  checkButtonText: {
-    color: '#E53935',
-    fontWeight: 'bold',
-    fontSize: 12,
-  },
-  checkButtonCompleted: {
-    backgroundColor: '#4CAF50',
-    borderColor: '#4CAF50',
-  },
-  removeSetButton: {
-    padding: 4,
-    marginLeft: 4,
-  },
-  maxRepsRow: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    paddingVertical: 8,
-  },
-  maxRepsText: {
-    fontSize: 12,
-    color: '#888',
-  },
-  addSetButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    marginTop: 4,
-  },
-  addSetText: {
-    fontSize: 14,
-    color: '#888',
-    marginLeft: 4,
-  },
-  completeButton: {
-    backgroundColor: '#4CAF50',
-    paddingVertical: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 16,
-  },
-  completeButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  addExerciseButton: {
-    flexDirection: 'row',
-    backgroundColor: '#E53935',
-    marginHorizontal: 16,
-    marginVertical: 16,
-    paddingVertical: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  addExerciseText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '500',
-    marginLeft: 8,
-  },
+  checkButtonText: { color: '#E53935', fontWeight: 'bold', fontSize: 12 },
+  checkButtonCompleted: { backgroundColor: '#4CAF50', borderColor: '#4CAF50' },
+  removeSetButton: { padding: 4, marginLeft: 4 },
+  maxRepsRow: { flexDirection: 'row', justifyContent: 'flex-end', paddingVertical: 8 },
+  maxRepsText: { fontSize: 12, color: '#888' },
+  addSetButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 12, marginTop: 4 },
+  addSetText: { fontSize: 14, color: '#888', marginLeft: 4 },
+  completeButton: { backgroundColor: '#4CAF50', paddingVertical: 16, borderRadius: 8, alignItems: 'center', marginTop: 16 },
+  completeButtonText: { color: 'white', fontSize: 16, fontWeight: 'bold' },
+  addExerciseButton: { flexDirection: 'row', backgroundColor: '#E53935', marginHorizontal: 16, marginVertical: 16, paddingVertical: 16, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  addExerciseText: { color: 'white', fontSize: 16, fontWeight: '500', marginLeft: 8 },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.7)',
@@ -1030,39 +742,30 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: '500',
   },
-  animationModalContent: {
-    backgroundColor: 'white',
-    margin: 20,
-    borderRadius: 12,
-    padding: 20,
-    maxHeight: '80%',
-  },
-  animationModalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  popupOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.85)',
+    justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
   },
-  animationModalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
+  popupContent: {
+    width: width * 0.85,
+    backgroundColor: '#1a1a1a',
+    borderRadius: 12,
+    overflow: 'hidden',
   },
-  closeButton: {
-    padding: 4,
+  popupClose: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    zIndex: 1,
   },
-  animationContainer: {
-    marginTop: 8,
+  popupScroll: {
+    padding: 20,
+    paddingTop: 44,
+    alignItems: 'center',
   },
-  debugInfo: {
-    backgroundColor: '#333',
-    padding: 10,
-    marginBottom: 10,
-    borderRadius: 8,
-  },
-  debugText: {
-    color: '#fff',
-    fontSize: 12,
-    textAlign: 'center',
+  popupGif: {
+    borderRadius: 12,
   },
 });
