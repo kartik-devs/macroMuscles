@@ -19,6 +19,7 @@ import { getCurrentUserId } from '../api/auth';
 import { Calendar } from 'react-native-calendars';
 import { useFocusEffect } from '@react-navigation/native';
 import { getChallengeProgress } from '../api/challenges';
+import { getUserLevel } from '../api/profileEnhancements';
 import { useTheme } from '../theme/ThemeContext';
 
 export default function Dashboard({ navigation }) {
@@ -33,6 +34,7 @@ export default function Dashboard({ navigation }) {
   });
   const [recentWorkouts, setRecentWorkouts] = useState([]);
   const [markedDates, setMarkedDates] = useState({});
+  const [userLevel, setUserLevel] = useState({ level: 1, experience_points: 0 });
   
   // Load user data on component mount
   useEffect(() => {
@@ -49,6 +51,8 @@ export default function Dashboard({ navigation }) {
           // Load user statistics
           const stats = await getUserStatistics(id);
           setUserStats(stats);
+          const levelData = await getUserLevel(id);
+          setUserLevel(levelData);
           
           // Load recent workout history
           const workouts = await getWorkoutHistory(id);
@@ -110,6 +114,8 @@ export default function Dashboard({ navigation }) {
             setUserName(profile.display_name);
             const stats = await getUserStatistics(id);
             setUserStats(stats);
+            const levelData = await getUserLevel(id);
+            setUserLevel(levelData);
             const workouts = await getWorkoutHistory(id);
             setRecentWorkouts(workouts.slice(0, 5));
             const marks = await getCompletionDates(id);
@@ -292,6 +298,8 @@ export default function Dashboard({ navigation }) {
   const currentDate = new Date();
   const currentMonth = currentDate.toLocaleString('default', { month: 'long' });
   const currentYear = currentDate.getFullYear();
+  const totalXP = typeof userLevel.experience_points === 'number' ? userLevel.experience_points : 0;
+  const xpWithinLevel = totalXP % 1000;
 
   return (
     <SafeAreaView style={[dashboardStyles.container, { backgroundColor: colors.background }]}>
@@ -306,6 +314,15 @@ export default function Dashboard({ navigation }) {
           <View>
             <Text style={[dashboardStyles.welcomeText, { color: colors.textSecondary }]}>Hello, welcome back</Text>
             <Text style={[dashboardStyles.userName, { color: colors.text }]}>{userName}</Text>
+            <View style={dashboardStyles.levelRow}>
+              <View style={[dashboardStyles.levelChip, { backgroundColor: colors.surface }]}>
+                <Ionicons name="star" size={14} color={colors.primary} />
+                <Text style={[dashboardStyles.levelChipText, { color: colors.text }]}>Level {userLevel.level}</Text>
+              </View>
+              <Text style={[dashboardStyles.levelXpText, { color: colors.textSecondary }]}>
+                {xpWithinLevel} / 1000 XP
+              </Text>
+            </View>
           </View>
         </View>
 
@@ -390,17 +407,8 @@ export default function Dashboard({ navigation }) {
         <View style={[dashboardStyles.sectionContainer, { backgroundColor: colors.surface }]}>
           <Text style={[dashboardStyles.sectionTitle, { color: colors.text }]}>Consistency Report</Text>
           <View style={[dashboardStyles.calendarContainer, { backgroundColor: colors.surface }]}>
-            <View style={dashboardStyles.calendarHeader}>
-              <TouchableOpacity>
-                <Ionicons name="chevron-back" size={24} color={colors.text} />
-              </TouchableOpacity>
-              <Text style={[dashboardStyles.calendarTitle, { color: colors.text }]}>{currentMonth} {currentYear}</Text>
-              <TouchableOpacity>
-                <Ionicons name="chevron-forward" size={24} color={colors.text} />
-              </TouchableOpacity>
-            </View>
-            {/* Calendar Days Header removed, replaced by Calendar component */}
             <Calendar
+              enableSwipeMonths
               markingType={'custom'}
               markedDates={markedDates}
               theme={colors.calendar}

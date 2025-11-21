@@ -115,6 +115,7 @@ export const ThemeProvider = ({ children }) => {
         monthTextColor: isDarkMode ? '#ffffff' : '#000000',
         dayTextColor: isDarkMode ? '#ffffff' : '#000000',
         textDisabledColor: isDarkMode ? '#444444' : '#cccccc',
+        calendarBackground: isDarkMode ? '#111111' : '#ffffff',
       }
     }
   };

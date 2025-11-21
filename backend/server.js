@@ -594,6 +594,37 @@ app.get('/api/statistics/:userId', async (req, res) => {
   }
 });
 
+// Get user level and experience points derived from statistics
+app.get('/api/profile/level/:userId', async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    const stats = await UserStatistics.findOne({ user_id: userId });
+
+    if (!stats) {
+      return res.json({ level: 1, experience_points: 0 });
+    }
+
+    const totalWorkouts = stats.total_workouts || 0;
+    const totalMinutes = stats.total_workout_time || 0;
+    const totalCalories = stats.total_calories_burned || 0;
+    const currentStreak = stats.current_streak || 0;
+
+    // Simple XP model: reward consistency, time, and calories
+    const experience_points =
+      totalWorkouts * 100 +
+      totalMinutes * 2 +
+      Math.floor(totalCalories / 10) +
+      currentStreak * 20;
+
+    const level = Math.floor(experience_points / 1000) + 1;
+
+    res.json({ level, experience_points });
+  } catch (error) {
+    console.error('Server error:', error);
+    res.status(500).json({ message: 'Error calculating user level' });
+  }
+});
+
 // Friends Routes
 // Search for users
 app.get('/api/users/search', authenticateToken, async (req, res) => {

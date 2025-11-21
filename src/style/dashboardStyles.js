@@ -24,6 +24,27 @@ export const dashboardStyles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#1a1a1a',
   },
+  levelRow: {
+    marginTop: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  levelChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+  },
+  levelChipText: {
+    marginLeft: 6,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  levelXpText: {
+    marginLeft: 10,
+    fontSize: 12,
+  },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -101,19 +101,17 @@ export default function WorkoutMain({ navigation }) {
 
   if (loading || introSeen === null) {
     return (
-   
-
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-        <view>
-        <TouchableOpacity onPress={()=> navigation.navigate("settings")}>
-          <Ionicons name = "settings" size = {24} color = "000"/>
-        </TouchableOpacity>
-        <StatusBar barStyle={colors.statusBar} backgroundColor={colors.background} />
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading your workout...</Text>
+        <View>
+          <TouchableOpacity onPress={() => navigation.navigate('SettingsPage')}>
+            <Ionicons name="settings" size={24} color="#000" />
+          </TouchableOpacity>
+          <StatusBar barStyle={colors.statusBar} backgroundColor={colors.background} />
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={colors.primary} />
+            <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading your workout...</Text>
+          </View>
         </View>
-        </view>
       </SafeAreaView>
     );
   }
